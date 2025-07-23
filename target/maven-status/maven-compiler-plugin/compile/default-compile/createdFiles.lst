@@ -1,0 +1,11 @@
+com/example/SkillSwap/model/User.class
+com/example/SkillSwap/repository/SkillRepository.class
+com/example/SkillSwap/repository/UserOffersRepository.class
+com/example/SkillSwap/controller/ProfileController.class
+com/example/SkillSwap/ServletInitializer.class
+com/example/SkillSwap/repository/UserWantsRepository.class
+com/example/SkillSwap/model/UserWants.class
+com/example/SkillSwap/SkillSwapBackendApplication.class
+com/example/SkillSwap/repository/UserRepository.class
+com/example/SkillSwap/model/Skill.class
+com/example/SkillSwap/model/UserOffers.class
