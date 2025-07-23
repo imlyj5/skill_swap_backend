@@ -24,6 +24,9 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<UserOffers> userOffers;
 
+    @OneToMany(mappedBy = "user")
+    private List<UserWants> userWants;
+
     // Default constructor required by JPA
     public User() {
     }
@@ -112,5 +115,13 @@ public class User {
 
     public void setUserOffers(List<UserOffers> userOffers) {
         this.userOffers = userOffers;
+    }
+
+    public List<UserWants> getUserWants() {
+        return userWants;
+    }
+
+    public void setUserWants(List<UserWants> userWants) {
+        this.userWants = userWants;
     }
 }

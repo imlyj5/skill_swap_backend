@@ -33,6 +33,7 @@ public class ProfileController {
           user.setAvailability(newUser.getAvailability());
           user.setPassword(newUser.getPassword());
           user.setUserOffers(newUser.getUserOffers());
+          user.setUserWants(newUser.getUserWants());
           return repository.save(user);
         })
         .orElseThrow(() -> new UserNotFoundException(id));
@@ -63,3 +64,17 @@ public class ProfileController {
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
