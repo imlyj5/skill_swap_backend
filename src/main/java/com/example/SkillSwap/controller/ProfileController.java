@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.SkillSwap.repository.UserRepository;
 import com.example.SkillSwap.model.User;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 
+@CrossOrigin(origins = "https://skill-swap-frontend-dyhq.onrender.com")
 @RestController
 public class ProfileController {
     private final UserRepository repository;
