@@ -64,7 +64,13 @@ public class ProfileController {
             }
           }
           
-          return repository.save(user);
+          Users savedUser = repository.save(user);
+          
+          // Load skills for response
+          savedUser.setUserOffers(userOffersRepository.findByUserId(id));
+          savedUser.setUserWants(userWantsRepository.findByUserId(id));
+          
+          return savedUser;
         })
         .orElseThrow(() -> new UserNotFoundException(id));
     }
