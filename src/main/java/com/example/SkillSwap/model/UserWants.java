@@ -19,7 +19,7 @@ public class UserWants {
     @JsonIgnore
     private Users user;
     
-    private Long skill_id;
+    private String skillName; // Store skill name as text for simple matching
     
     // Getters and setters
     public Long getId() {
@@ -38,11 +38,11 @@ public class UserWants {
         this.user = user;
     }
     
-    public Long getSkill_id() {
-        return skill_id;
+    public String getSkillName() {
+        return skillName;
     }
     
-    public void setSkill_id(Long skill_id) {
-        this.skill_id = skill_id;
+    public void setSkillName(String skillName) {
+        this.skillName = skillName;
     }
 }

@@ -13,7 +13,7 @@ public class WebConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                    .allowedOrigins("https://skill-swap-frontend-dyhq.onrender.com")
+                    .allowedOrigins("https://skill-swap-frontend-dyhq.onrender.com", "http://localhost:3000")
                     .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                     .allowedHeaders("*");
             }
