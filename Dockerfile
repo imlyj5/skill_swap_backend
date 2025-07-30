@@ -1,14 +1,11 @@
-FROM openjdk:17-jdk-slim
-
+FROM maven:3.9.4 AS build
 WORKDIR /app
-
 COPY pom.xml .
 COPY src ./src
-
-RUN apt-get update && apt-get install -y maven
-
 RUN mvn clean package -DskipTests
 
-EXPOSE 8080
-
-CMD ["java", "-jar", "target/skill_swap_backend-1.0-SNAPSHOT.jar"] 
+FROM openjdk:17-jdk-alpine
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
+COPY --from=build /app/target/*.jar app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]

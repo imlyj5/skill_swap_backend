@@ -6,10 +6,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "users")
-public class User {
+public class Users {
     private @Id
     @GeneratedValue Long id;
     private String username;
@@ -22,17 +23,19 @@ public class User {
     private String password;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<UserOffers> userOffers;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<UserWants> userWants;
 
     // Default constructor required by JPA
-    public User() {
+    public Users() {
     }
 
     //custom constructor when we need to create a new instance but do not yet have an id
-    public User(String email, String password) {
+    public Users(String email, String password) {
         this.email = email;
         this.password = password;
     }
