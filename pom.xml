@@ -29,6 +29,12 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<flyway.user>${env.DATABASE_USERNAME}</flyway.user>
+		<flyway.password>${env.DATABASE_PASSWORD}</flyway.password>
+		<flyway.schemas>public</flyway.schemas>
+		<flyway.locations>classpath:db/migration</flyway.locations>
+		<flyway.baseline-on-migrate>true</flyway.baseline-on-migrate>
+		<flyway.validate-on-migrate>true</flyway.validate-on-migrate>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -63,6 +69,16 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -70,6 +86,20 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>11.7.2</version>
+				<configuration>
+					<url>${env.DATABASE_URL}</url>
+					<user>${flyway.user}</user>
+					<password>${flyway.password}</password>
+					<schemas>${flyway.schemas}</schemas>
+					<locations>${flyway.locations}</locations>
+					<baselineOnMigrate>${flyway.baseline-on-migrate}</baselineOnMigrate>
+					<validateOnMigrate>${flyway.validate-on-migrate}</validateOnMigrate>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

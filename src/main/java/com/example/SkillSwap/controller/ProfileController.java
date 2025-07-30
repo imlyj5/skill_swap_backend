@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.SkillSwap.repository.UserRepository;
-import com.example.SkillSwap.model.User;
+import com.example.SkillSwap.model.Users;
 
 
 @RestController
@@ -20,7 +20,7 @@ public class ProfileController {
       }
 
     @PatchMapping("/profiles/{id}")
-    User editUser(@RequestBody User newUser, @PathVariable Long id) {
+    Users editUser(@RequestBody Users newUser, @PathVariable Long id) {
     
       return repository.findById(id)
         .map(user -> {
@@ -48,18 +48,18 @@ public class ProfileController {
    }
 
     @GetMapping("/profiles")
-    List<User> all() {
+    List<Users> all() {
      return repository.findAll();
     }
 
     @GetMapping("/profiles/{id}")
-    User getUser(@PathVariable Long id) {
+    Users getUser(@PathVariable Long id) {
         return repository.findById(id)
             .orElseThrow(() -> new UserNotFoundException(id));
     }
 
     @PostMapping("/profiles")
-    User newUser(@RequestBody User newUser) {
+    Users newUser(@RequestBody Users newUser) {
       return repository.save(newUser);
     }
 

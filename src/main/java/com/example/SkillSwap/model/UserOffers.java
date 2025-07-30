@@ -5,15 +5,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "user_offers")
 public class UserOffers {
     private @Id
     @GeneratedValue Long id;
     
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User user;
+    private Users user;
     
     private Long skill_id;
     
@@ -26,11 +28,11 @@ public class UserOffers {
         this.id = id;
     }
     
-    public User getUser() {
+    public Users getUser() {
         return user;
     }
     
-    public void setUser(User user) {
+    public void setUser(Users user) {
         this.user = user;
     }
     
