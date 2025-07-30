@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "users")
@@ -22,9 +23,11 @@ public class Users {
     private String password;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<UserOffers> userOffers;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<UserWants> userWants;
 
     // Default constructor required by JPA
