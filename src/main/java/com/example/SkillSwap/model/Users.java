@@ -23,11 +23,9 @@ public class Users {
     private String password;
 
     @OneToMany(mappedBy = "user")
-    @JsonIgnore
     private List<UserOffers> userOffers;
 
     @OneToMany(mappedBy = "user")
-    @JsonIgnore
     private List<UserWants> userWants;
 
     // Default constructor required by JPA

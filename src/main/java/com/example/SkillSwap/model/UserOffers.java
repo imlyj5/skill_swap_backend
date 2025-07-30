@@ -16,7 +16,6 @@ public class UserOffers {
     
     @ManyToOne
     @JoinColumn(name = "user_id")
-    @JsonIgnore
     private Users user;
     
     private String skillName; // Store skill name as text for simple matching

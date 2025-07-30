@@ -1,5 +1,6 @@
 package com.example.SkillSwap.controller;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,7 +10,11 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.SkillSwap.repository.UserRepository;
+import com.example.SkillSwap.repository.UserOffersRepository;
+import com.example.SkillSwap.repository.UserWantsRepository;
 import com.example.SkillSwap.model.Users;
+import com.example.SkillSwap.model.UserOffers;
+import com.example.SkillSwap.model.UserWants;
 import org.springframework.web.bind.annotation.CrossOrigin;
 
 
@@ -17,9 +22,14 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 @RestController
 public class ProfileController {
     private final UserRepository repository;
-    ProfileController(UserRepository repository) {
+    private final UserOffersRepository userOffersRepository;
+    private final UserWantsRepository userWantsRepository;
+    
+    ProfileController(UserRepository repository, UserOffersRepository userOffersRepository, UserWantsRepository userWantsRepository) {
         this.repository = repository;
-      }
+        this.userOffersRepository = userOffersRepository;
+        this.userWantsRepository = userWantsRepository;
+    }
 
     @PatchMapping("/profiles/{id}")
     Users editUser(@RequestBody Users newUser, @PathVariable Long id) {
@@ -34,8 +44,26 @@ public class ProfileController {
           user.setLearning_style(newUser.getLearning_style());
           user.setAvailability(newUser.getAvailability());
           user.setPassword(newUser.getPassword());
-          user.setUserOffers(newUser.getUserOffers());
-          user.setUserWants(newUser.getUserWants());
+          
+          // Handle user offers and wants if provided
+          if (newUser.getUserOffers() != null) {
+            // Clear existing offers and add new ones
+            userOffersRepository.deleteByUserId(id);
+            for (UserOffers offer : newUser.getUserOffers()) {
+              offer.setUser(user);
+              userOffersRepository.save(offer);
+            }
+          }
+          
+          if (newUser.getUserWants() != null) {
+            // Clear existing wants and add new ones
+            userWantsRepository.deleteByUserId(id);
+            for (UserWants want : newUser.getUserWants()) {
+              want.setUser(user);
+              userWantsRepository.save(want);
+            }
+          }
+          
           return repository.save(user);
         })
         .orElseThrow(() -> new UserNotFoundException(id));
