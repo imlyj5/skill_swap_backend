@@ -6,7 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "user_offers")
@@ -16,7 +16,7 @@ public class UserOffers {
     
     @ManyToOne
     @JoinColumn(name = "user_id")
-    @JsonIgnore
+    @JsonBackReference("user-offers")
     private Users user;
     
     private String skillName; // Store skill name as text for simple matching
