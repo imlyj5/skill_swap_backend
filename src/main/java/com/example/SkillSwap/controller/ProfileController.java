@@ -16,6 +16,7 @@ import com.example.SkillSwap.model.Users;
 import com.example.SkillSwap.model.UserOffers;
 import com.example.SkillSwap.model.UserWants;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @CrossOrigin(origins = "https://skill-swap-frontend-dyhq.onrender.com")
@@ -32,6 +33,7 @@ public class ProfileController {
     }
 
     @PatchMapping("/profiles/{id}")
+    @Transactional
     Users editUser(@RequestBody Users newUser, @PathVariable Long id) {
     
       return repository.findById(id)
