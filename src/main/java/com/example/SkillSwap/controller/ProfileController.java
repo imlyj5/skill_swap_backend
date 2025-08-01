@@ -69,10 +69,24 @@ public class ProfileController {
           Users savedUser = repository.save(user);
           
           // Load skills for response
-          savedUser.setUserOffers(userOffersRepository.findByUserId(id));
-          savedUser.setUserWants(userWantsRepository.findByUserId(id));
+          List<UserOffers> offers = userOffersRepository.findByUserId(id);
+          List<UserWants> wants = userWantsRepository.findByUserId(id);
           
-          return savedUser;
+          // Create a response object that includes skills
+          Users responseUser = new Users();
+          responseUser.setId(savedUser.getId());
+          responseUser.setUsername(savedUser.getUsername());
+          responseUser.setPronouns(savedUser.getPronouns());
+          responseUser.setLocation(savedUser.getLocation());
+          responseUser.setBio(savedUser.getBio());
+          responseUser.setEmail(savedUser.getEmail());
+          responseUser.setLearning_style(savedUser.getLearning_style());
+          responseUser.setAvailability(savedUser.getAvailability());
+          responseUser.setPassword(savedUser.getPassword());
+          responseUser.setUserOffers(offers);
+          responseUser.setUserWants(wants);
+          
+          return responseUser;
         })
         .orElseThrow(() -> new UserNotFoundException(id));
     }
