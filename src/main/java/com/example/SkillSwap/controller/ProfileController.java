@@ -87,13 +87,25 @@ public class ProfileController {
 
     @GetMapping("/profiles")
     List<Users> all() {
-     return repository.findAll();
+        List<Users> users = repository.findAll();
+        // Load skills for each user
+        for (Users user : users) {
+            user.setUserOffers(userOffersRepository.findByUserId(user.getId()));
+            user.setUserWants(userWantsRepository.findByUserId(user.getId()));
+        }
+        return users;
     }
 
     @GetMapping("/profiles/{id}")
     Users getUser(@PathVariable Long id) {
-        return repository.findById(id)
+        Users user = repository.findById(id)
             .orElseThrow(() -> new UserNotFoundException(id));
+        
+        // Load skills for the user
+        user.setUserOffers(userOffersRepository.findByUserId(id));
+        user.setUserWants(userWantsRepository.findByUserId(id));
+        
+        return user;
     }
 
     @PostMapping("/profiles")
