@@ -6,6 +6,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.Objects;
 
+//For future use of AI
+
 @Entity
 @Table(name = "skill")
 public class Skill {

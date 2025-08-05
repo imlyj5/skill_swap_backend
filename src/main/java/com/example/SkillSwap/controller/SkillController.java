@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.SkillSwap.repository.SkillRepository;
 import com.example.SkillSwap.model.Skill;
 
+//For future use of AI
+
 @RestController
 public class SkillController {
     private final SkillRepository skillRepository;

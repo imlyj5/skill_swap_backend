@@ -1,6 +1,5 @@
 package com.example.SkillSwap.controller;
 import java.util.List;
-import java.util.ArrayList;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,104 +14,144 @@ import com.example.SkillSwap.repository.UserWantsRepository;
 import com.example.SkillSwap.model.Users;
 import com.example.SkillSwap.model.UserOffers;
 import com.example.SkillSwap.model.UserWants;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.transaction.annotation.Transactional;
 
-
-@CrossOrigin(origins = "https://skill-swap-frontend-dyhq.onrender.com")
+/**
+ * ProfileController manages all user profile operations including:
+ * - Creating new user profiles
+ * - Reading user profiles (individual and all users)
+ * - Updating user profiles and their skills
+ * - Deleting user profiles
+ */
 @RestController
 public class ProfileController {
+    
+    // Repository dependencies for database operations
     private final UserRepository repository;
     private final UserOffersRepository userOffersRepository;
     private final UserWantsRepository userWantsRepository;
-    
-    ProfileController(UserRepository repository, UserOffersRepository userOffersRepository, UserWantsRepository userWantsRepository) {
+
+    /**
+     * Constructor injection for all required repositories
+     */
+    ProfileController(UserRepository repository, 
+                     UserOffersRepository userOffersRepository,
+                     UserWantsRepository userWantsRepository) {
         this.repository = repository;
         this.userOffersRepository = userOffersRepository;
         this.userWantsRepository = userWantsRepository;
     }
 
-    @PatchMapping("/profiles/{id}")
-    @Transactional
-    Users editUser(@RequestBody Users newUser, @PathVariable Long id) {
-    
-      return repository.findById(id)
-        .map(user -> {
-          user.setUsername(newUser.getUsername());
-          user.setPronouns(newUser.getPronouns());
-          user.setLocation(newUser.getLocation());
-          user.setBio(newUser.getBio());
-          user.setEmail(newUser.getEmail());
-          user.setLearning_style(newUser.getLearning_style());
-          user.setAvailability(newUser.getAvailability());
-          user.setPassword(newUser.getPassword());
-          
-          // Handle user offers and wants if provided
-          if (newUser.getUserOffers() != null) {
-            // Clear existing offers and add new ones
-            userOffersRepository.deleteByUserId(id);
-            for (UserOffers offer : newUser.getUserOffers()) {
-              offer.setUser(user);
-              userOffersRepository.save(offer);
-            }
-          }
-          
-          if (newUser.getUserWants() != null) {
-            // Clear existing wants and add new ones
-            userWantsRepository.deleteByUserId(id);
-            for (UserWants want : newUser.getUserWants()) {
-              want.setUser(user);
-              userWantsRepository.save(want);
-            }
-          }
-          
-          Users savedUser = repository.save(user);
-          
-          // Load skills for response
-          savedUser.setUserOffers(userOffersRepository.findByUserId(id));
-          savedUser.setUserWants(userWantsRepository.findByUserId(id));
-          
-          return savedUser;
-        })
-        .orElseThrow(() -> new UserNotFoundException(id));
-    }
-
-    @DeleteMapping("/profiles/{id}")
-    void deleteUser(@PathVariable Long id) {
-      if (!repository.existsById(id)) {
-        throw new UserNotFoundException(id);
-      }
-      repository.deleteById(id);
-   }
-
-    @GetMapping("/profiles")
+    @GetMapping("/users")
     List<Users> all() {
         List<Users> users = repository.findAll();
-        // Load skills for each user
+        
+        // Explicitly load skill collections to avoid lazy loading issues when serializing to JSON
         for (Users user : users) {
             user.setUserOffers(userOffersRepository.findByUserId(user.getId()));
             user.setUserWants(userWantsRepository.findByUserId(user.getId()));
         }
+        
         return users;
     }
 
-    @GetMapping("/profiles/{id}")
+    @PostMapping("/users")
+    @Transactional
+    Users newUser(@RequestBody Users newUser) {
+        // Save the main user profile first to get the generated ID
+        Users savedUser = repository.save(newUser);
+        
+        // save all skills the user offers
+        if (newUser.getUserOffers() != null) {
+            for (UserOffers offer : newUser.getUserOffers()) {
+                offer.setUser(savedUser); // Link back to the user
+                userOffersRepository.save(offer);
+            }
+        }
+        
+        // save all skills the user wants to learn
+        if (newUser.getUserWants() != null) {
+            for (UserWants want : newUser.getUserWants()) {
+                want.setUser(savedUser); // Link back to the user
+                userWantsRepository.save(want);
+            }
+        }
+        
+        // Reload the user with all associated skills for the response
+        savedUser.setUserOffers(userOffersRepository.findByUserId(savedUser.getId()));
+        savedUser.setUserWants(userWantsRepository.findByUserId(savedUser.getId()));
+        
+        return savedUser;
+    }
+
+    @GetMapping("/users/{id}")
     Users getUser(@PathVariable Long id) {
         Users user = repository.findById(id)
             .orElseThrow(() -> new UserNotFoundException(id));
         
-        // Load skills for the user
+        // Load the user's skill collections
         user.setUserOffers(userOffersRepository.findByUserId(id));
         user.setUserWants(userWantsRepository.findByUserId(id));
         
         return user;
     }
 
-    @PostMapping("/profiles")
-    Users newUser(@RequestBody Users newUser) {
-      return repository.save(newUser);
+    @PatchMapping("/users/{id}")
+    @Transactional
+    Users editUser(@RequestBody Users newUser, @PathVariable Long id) {
+        
+        // Find the existing user or throw exception if not found
+        Users existingUser = repository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException(id));
+        
+        // Update user profile fields with new data
+        existingUser.setUsername(newUser.getUsername());
+        existingUser.setPronouns(newUser.getPronouns());
+        existingUser.setLocation(newUser.getLocation());
+        existingUser.setBio(newUser.getBio());
+        existingUser.setEmail(newUser.getEmail());
+        existingUser.setLearning_style(newUser.getLearning_style());
+        existingUser.setAvailability(newUser.getAvailability());
+        existingUser.setPassword(newUser.getPassword());
+        
+        // Save the updated user profile
+        Users savedUser = repository.save(existingUser);
+        
+        // Delete all existing skills for this user
+        userOffersRepository.deleteByUserId(id);
+        userWantsRepository.deleteByUserId(id);
+        
+        // Add all new skills from the request (since in frontend we edit everything at once)
+        if (newUser.getUserOffers() != null) {
+            for (UserOffers offer : newUser.getUserOffers()) {
+                offer.setUser(savedUser); // Link to the user
+                userOffersRepository.save(offer);
+            }
+        }
+        
+        if (newUser.getUserWants() != null) {
+            for (UserWants want : newUser.getUserWants()) {
+                want.setUser(savedUser); // Link to the user
+                userWantsRepository.save(want);
+            }
+        }
+        
+        // Load and return the updated user with all new skills
+        savedUser.setUserOffers(userOffersRepository.findByUserId(savedUser.getId()));
+        savedUser.setUserWants(userWantsRepository.findByUserId(savedUser.getId()));
+        
+        return savedUser;
     }
 
+    @DeleteMapping("/users/{id}")
+    void deleteUser(@PathVariable Long id) {
+        // Verify user exists before attempting deletion
+        if (!repository.existsById(id)) {
+            throw new UserNotFoundException(id);
+        }
+
+        repository.deleteById(id);
+    }
 }
 
 

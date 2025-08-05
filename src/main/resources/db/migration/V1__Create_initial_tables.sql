@@ -11,14 +11,14 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL
 );
 
--- Create user_offers table (skills that users offer)
+-- Create user_offers table
 CREATE TABLE user_offers (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     skill_name VARCHAR(255) NOT NULL
 );
 
--- Create user_wants table (skills that users want to learn)
+-- Create user_wants table
 CREATE TABLE user_wants (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

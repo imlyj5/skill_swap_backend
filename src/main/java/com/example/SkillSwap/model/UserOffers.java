@@ -19,7 +19,7 @@ public class UserOffers {
     @JsonBackReference("user-offers")
     private Users user;
     
-    private String skillName; // Store skill name as text for simple matching
+    private String skillName;
     
     // Getters and setters
     public Long getId() {
