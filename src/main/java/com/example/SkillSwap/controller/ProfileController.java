@@ -42,7 +42,7 @@ public class ProfileController {
         this.userWantsRepository = userWantsRepository;
     }
 
-    @GetMapping("/users")
+    @GetMapping("/profiles")
     List<Users> all() {
         List<Users> users = repository.findAll();
         
@@ -55,7 +55,7 @@ public class ProfileController {
         return users;
     }
 
-    @PostMapping("/users")
+    @PostMapping("/profiles")
     @Transactional
     Users newUser(@RequestBody Users newUser) {
         // Save the main user profile first to get the generated ID
@@ -84,7 +84,7 @@ public class ProfileController {
         return savedUser;
     }
 
-    @GetMapping("/users/{id}")
+    @GetMapping("/profiles/{id}")
     Users getUser(@PathVariable Long id) {
         Users user = repository.findById(id)
             .orElseThrow(() -> new UserNotFoundException(id));
@@ -96,7 +96,7 @@ public class ProfileController {
         return user;
     }
 
-    @PatchMapping("/users/{id}")
+    @PatchMapping("/profiles/{id}")
     @Transactional
     Users editUser(@RequestBody Users newUser, @PathVariable Long id) {
         
@@ -143,7 +143,7 @@ public class ProfileController {
         return savedUser;
     }
 
-    @DeleteMapping("/users/{id}")
+    @DeleteMapping("/profiles/{id}")
     void deleteUser(@PathVariable Long id) {
         // Verify user exists before attempting deletion
         if (!repository.existsById(id)) {
