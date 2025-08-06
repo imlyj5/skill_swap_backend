@@ -5,9 +5,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
-import org.springframework.transaction.annotation.Transactional;
 import com.example.SkillSwap.service.MatchingService;
 import com.example.SkillSwap.model.Users;
+import com.example.SkillSwap.model.UserOffers;
+import com.example.SkillSwap.model.UserWants;
 import com.example.SkillSwap.repository.UserOffersRepository;
 import com.example.SkillSwap.repository.UserWantsRepository;
 
@@ -38,21 +39,38 @@ public class MatchingController {
     }
     
     @GetMapping("/{userId}")
-    @Transactional  // Ensures database session stays open
-                    // Hibernate Session Lifecycle: Each database operation opens/closes a session
-                    // Lazy Loading: userOffers and userWants are marked as @OneToMany (lazy by default)
-                    // Session Closed: When findMatchesForUser() returns, the session closes
-                    // Lazy Access: When we try to load skills later, no session exists → Exception!
-
     public Map<String, Object> getMatchesForUser(@PathVariable Long userId) {
         
         // Use the matching service to find compatible users
         List<Users> matches = matchingService.findMatchesForUser(userId);
-        // if no Transactional, Hibernate session is CLOSED here
-
-        for (Users user : matches) {
-            user.setUserOffer(userOffersRepository.findByUserId(user.getId()).orElse(null)); // if no Transactional, LazyInitializationException!
-            user.setUserWant(userWantsRepository.findByUserId(user.getId()).orElse(null));
+        
+        // ✅ OPTIMIZED: Bulk load all skills instead of N+1 queries
+        if (!matches.isEmpty()) {
+            // Extract all user IDs from matches
+            List<Long> matchedUserIds = matches.stream()
+                .map(Users::getId)
+                .toList();
+            
+            // Bulk query: Load all offers and wants in 2 queries instead of N queries
+            List<UserOffers> allOffers = userOffersRepository.findByUserIdIn(matchedUserIds);
+            List<UserWants> allWants = userWantsRepository.findByUserIdIn(matchedUserIds);
+            
+            // Map skills back to users
+            for (Users user : matches) {
+                // Find this user's offer and want from the bulk-loaded lists
+                UserOffers userOffer = allOffers.stream()
+                    .filter(offer -> offer.getUser().getId().equals(user.getId()))
+                    .findFirst()
+                    .orElse(null);
+                    
+                UserWants userWant = allWants.stream()
+                    .filter(want -> want.getUser().getId().equals(user.getId()))
+                    .findFirst()
+                    .orElse(null);
+                
+                user.setUserOffer(userOffer);
+                user.setUserWant(userWant);
+            }
         }
         
         // Build the response object

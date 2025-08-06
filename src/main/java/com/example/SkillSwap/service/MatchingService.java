@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
-import com.example.SkillSwap.repository.UserRepository;
 import com.example.SkillSwap.repository.UserOffersRepository;
 import com.example.SkillSwap.repository.UserWantsRepository;
 import com.example.SkillSwap.model.Users;
@@ -29,72 +28,60 @@ import com.example.SkillSwap.model.UserWants;
 public class MatchingService {
     
     // Repository dependencies
-    private final UserRepository userRepository;
     private final UserOffersRepository userOffersRepository;
     private final UserWantsRepository userWantsRepository;
     
     // Constructor injection for all required repositories
-    public MatchingService(UserRepository userRepository, 
-                          UserOffersRepository userOffersRepository,
+    public MatchingService(UserOffersRepository userOffersRepository,
                           UserWantsRepository userWantsRepository) {
-        this.userRepository = userRepository;
         this.userOffersRepository = userOffersRepository;
         this.userWantsRepository = userWantsRepository;
     }
     
     /**
+     * Optimized matching logic using bulk queries instead of N+1 pattern.
+     * 
      * 1. Get the requesting user's single offered and wanted skill
-     * 2. For each other user in the system:
-     *    a. Get their single offered and wanted skill
-     *    b. Check if there's a perfect match:
-     *       - Does the requesting user offer what the other user wants? AND
-     *       - Does the other user offer what the requesting user wants?
-     * 3. If both conditions are met, it's a perfect match
-     * 4. Return all matched users
+     * 2. Find all users who want what this user offers
+     * 3. Find all users who offer what this user wants  
+     * 4. Find intersection (users who appear in both lists) = perfect matches!
      */
     public List<Users> findMatchesForUser(Long userId) {
-        List<Users> matchedUsers = new ArrayList<>();
-        
         // 1. Get the requesting user's skills
         Optional<UserOffers> userOfferOpt = userOffersRepository.findByUserId(userId);
         Optional<UserWants> userWantOpt = userWantsRepository.findByUserId(userId);
         
         // Skip if user doesn't have both offer and want skills
         if (userOfferOpt.isEmpty() || userWantOpt.isEmpty()) {
-            return matchedUsers; // Return empty list
+            return new ArrayList<>(); // Return empty list
         }
         
         String userOfferedSkill = userOfferOpt.get().getSkillName();
         String userWantedSkill = userWantOpt.get().getSkillName();
         
-        // 2. Check each other user for compatibility
-        List<Users> allUsers = userRepository.findAll();
+        // 2. Find all users who WANT what this user OFFERS (potential matches part 1)
+        List<UserWants> usersWhoWantMySkill = userWantsRepository.findBySkillName(userOfferedSkill);
         
-        for (Users otherUser : allUsers) {
-            // Skip checking the user against themselves
-            if (otherUser.getId().equals(userId)) {
+        // 3. Find all users who OFFER what this user WANTS (potential matches part 2)  
+        List<UserOffers> usersWhoOfferMyWantedSkill = userOffersRepository.findBySkillName(userWantedSkill);
+        
+        // 4. Find users who appear in BOTH lists (perfect matches!)
+        List<Users> matchedUsers = new ArrayList<>();
+        
+        for (UserWants userWant : usersWhoWantMySkill) {
+            Long potentialMatchUserId = userWant.getUser().getId();
+            
+            // Skip self-matching
+            if (potentialMatchUserId.equals(userId)) {
                 continue;
             }
             
-            // 3. Get the other user's skills
-            Optional<UserOffers> otherOfferOpt = userOffersRepository.findByUserId(otherUser.getId());
-            Optional<UserWants> otherWantOpt = userWantsRepository.findByUserId(otherUser.getId());
+            // Check if this user also offers what I want
+            boolean alsoOffersWhatIWant = usersWhoOfferMyWantedSkill.stream()
+                .anyMatch(offer -> offer.getUser().getId().equals(potentialMatchUserId));
             
-            // Skip if other user doesn't have both offer and want skills
-            if (otherOfferOpt.isEmpty() || otherWantOpt.isEmpty()) {
-                continue;
-            }
-            
-            String otherOfferedSkill = otherOfferOpt.get().getSkillName();
-            String otherWantedSkill = otherWantOpt.get().getSkillName();
-            
-            // 4. Check for perfect match (simplified!)
-            boolean hasMatch = userOfferedSkill.equals(otherWantedSkill) && 
-                              otherOfferedSkill.equals(userWantedSkill);
-            
-            // 5. Add user to results if they're compatible
-            if (hasMatch) {
-                matchedUsers.add(otherUser);
+            if (alsoOffersWhatIWant) {
+                matchedUsers.add(userWant.getUser());
             }
         }
         
