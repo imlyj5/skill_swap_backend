@@ -51,8 +51,8 @@ public class MatchingController {
         // if no Transactional, Hibernate session is CLOSED here
 
         for (Users user : matches) {
-            user.setUserOffers(userOffersRepository.findByUserId(user.getId())); // if no Transactional, LazyInitializationException!
-            user.setUserWants(userWantsRepository.findByUserId(user.getId()));
+            user.setUserOffer(userOffersRepository.findByUserId(user.getId()).orElse(null)); // if no Transactional, LazyInitializationException!
+            user.setUserWant(userWantsRepository.findByUserId(user.getId()).orElse(null));
         }
         
         // Build the response object

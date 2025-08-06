@@ -16,7 +16,6 @@ import com.example.SkillSwap.model.UserOffers;
 import com.example.SkillSwap.model.UserWants;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
-import java.util.ArrayList;
 
 /**
  * ProfileController manages all user profile operations including:
@@ -48,10 +47,10 @@ public class ProfileController {
     List<Users> all() {
         List<Users> users = repository.findAll();
         
-        // Explicitly load skill collections to avoid lazy loading issues when serializing to JSON
+        // Explicitly load skills to avoid lazy loading issues when serializing to JSON
         for (Users user : users) {
-            user.setUserOffers(userOffersRepository.findByUserId(user.getId()));
-            user.setUserWants(userWantsRepository.findByUserId(user.getId()));
+            user.setUserOffer(userOffersRepository.findByUserId(user.getId()).orElse(null));
+            user.setUserWant(userWantsRepository.findByUserId(user.getId()).orElse(null));
         }
         
         return users;
@@ -63,25 +62,21 @@ public class ProfileController {
         // Save the main user profile first to get the generated ID
         Users savedUser = repository.save(newUser);
         
-        // save all skills the user offers
-        if (newUser.getUserOffers() != null) {
-            for (UserOffers offer : newUser.getUserOffers()) {
-                offer.setUser(savedUser); // Link back to the user
-                userOffersRepository.save(offer);
-            }
+        // save the skill the user offers
+        if (newUser.getUserOffer() != null) {
+            newUser.getUserOffer().setUser(savedUser); // Link back to the user
+            userOffersRepository.save(newUser.getUserOffer());
         }
         
-        // save all skills the user wants to learn
-        if (newUser.getUserWants() != null) {
-            for (UserWants want : newUser.getUserWants()) {
-                want.setUser(savedUser); // Link back to the user
-                userWantsRepository.save(want);
-            }
+        // save the skill the user wants to learn
+        if (newUser.getUserWant() != null) {
+            newUser.getUserWant().setUser(savedUser); // Link back to the user
+            userWantsRepository.save(newUser.getUserWant());
         }
         
-        // Reload the user with all associated skills for the response
-        savedUser.setUserOffers(userOffersRepository.findByUserId(savedUser.getId()));
-        savedUser.setUserWants(userWantsRepository.findByUserId(savedUser.getId()));
+        // Reload the user with associated skills for the response
+        savedUser.setUserOffer(userOffersRepository.findByUserId(savedUser.getId()).orElse(null));
+        savedUser.setUserWant(userWantsRepository.findByUserId(savedUser.getId()).orElse(null));
         
         return savedUser;
     }
@@ -91,9 +86,9 @@ public class ProfileController {
         Users user = repository.findById(id)
             .orElseThrow(() -> new UserNotFoundException(id));
         
-        // Load the user's skill collections
-        user.setUserOffers(userOffersRepository.findByUserId(id));
-        user.setUserWants(userWantsRepository.findByUserId(id));
+        // Load the user's skills
+        user.setUserOffer(userOffersRepository.findByUserId(id).orElse(null));
+        user.setUserWant(userWantsRepository.findByUserId(id).orElse(null));
         
         return user;
     }
@@ -122,34 +117,34 @@ public class ProfileController {
         if (requestBody.containsKey("learning_style")) user.setLearning_style((String) requestBody.get("learning_style"));
         if (requestBody.containsKey("password")) user.setPassword((String) requestBody.get("password"));
         
-        // Convert skills_to_offer to userOffers
+        // Convert skills_to_offer to userOffer (single skill)
         if (requestBody.containsKey("skills_to_offer")) {
             @SuppressWarnings("unchecked")
             List<String> skillsToOffer = (List<String>) requestBody.get("skills_to_offer");
-            List<UserOffers> userOffers = new ArrayList<>();
+            // Take the first non-empty skill from the array
             for (String skillName : skillsToOffer) {
                 if (skillName != null && !skillName.trim().isEmpty()) {
                     UserOffers offer = new UserOffers();
                     offer.setSkillName(skillName.trim());
-                    userOffers.add(offer);
+                    user.setUserOffer(offer);
+                    break; // Only take the first one
                 }
             }
-            user.setUserOffers(userOffers);
         }
         
-        // Convert skills_to_learn to userWants
+        // Convert skills_to_learn to userWant (single skill)
         if (requestBody.containsKey("skills_to_learn")) {
             @SuppressWarnings("unchecked")
             List<String> skillsToLearn = (List<String>) requestBody.get("skills_to_learn");
-            List<UserWants> userWants = new ArrayList<>();
+            // Take the first non-empty skill from the array
             for (String skillName : skillsToLearn) {
                 if (skillName != null && !skillName.trim().isEmpty()) {
                     UserWants want = new UserWants();
                     want.setSkillName(skillName.trim());
-                    userWants.add(want);
+                    user.setUserWant(want);
+                    break; // Only take the first one
                 }
             }
-            user.setUserWants(userWants);
         }
         
         return user;
@@ -175,28 +170,24 @@ public class ProfileController {
         // Save the updated user profile
         Users savedUser = repository.save(existingUser);
         
-        // Delete all existing skills for this user
+        // Delete existing skills for this user
         userOffersRepository.deleteByUserId(id);
         userWantsRepository.deleteByUserId(id);
         
-        // Add all new skills from the request (since in frontend we edit everything at once)
-        if (newUser.getUserOffers() != null) {
-            for (UserOffers offer : newUser.getUserOffers()) {
-                offer.setUser(savedUser); // Link to the user
-                userOffersRepository.save(offer);
-            }
+        // Add new skills from the request
+        if (newUser.getUserOffer() != null) {
+            newUser.getUserOffer().setUser(savedUser); // Link to the user
+            userOffersRepository.save(newUser.getUserOffer());
         }
         
-        if (newUser.getUserWants() != null) {
-            for (UserWants want : newUser.getUserWants()) {
-                want.setUser(savedUser); // Link to the user
-                userWantsRepository.save(want);
-            }
+        if (newUser.getUserWant() != null) {
+            newUser.getUserWant().setUser(savedUser); // Link to the user
+            userWantsRepository.save(newUser.getUserWant());
         }
         
-        // Load and return the updated user with all new skills
-        savedUser.setUserOffers(userOffersRepository.findByUserId(savedUser.getId()));
-        savedUser.setUserWants(userWantsRepository.findByUserId(savedUser.getId()));
+        // Load and return the updated user with new skills
+        savedUser.setUserOffer(userOffersRepository.findByUserId(savedUser.getId()).orElse(null));
+        savedUser.setUserWant(userWantsRepository.findByUserId(savedUser.getId()).orElse(null));
         
         return savedUser;
     }

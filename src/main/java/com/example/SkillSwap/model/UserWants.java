@@ -3,7 +3,7 @@ package com.example.SkillSwap.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -14,7 +14,7 @@ public class UserWants {
     private @Id
     @GeneratedValue Long id;
     
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "user_id")
     @JsonBackReference("user-wants")
     private Users user;

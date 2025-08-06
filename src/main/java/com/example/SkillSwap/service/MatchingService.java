@@ -2,9 +2,7 @@ package com.example.SkillSwap.service;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import com.example.SkillSwap.repository.UserRepository;
@@ -17,9 +15,9 @@ import com.example.SkillSwap.model.UserWants;
 /**
  * MatchingService implements the core skill-matching logic.
  * 
- * This service finds users who are compatible.
- * 
- * for skill exchanges based on the "Exact Text" matching algorithm:
+ * This service finds users who are compatible for skill exchanges 
+ * based on exact text matching. Each user can only offer one skill 
+ * and want one skill:
  * - User A offers what User B wants AND
  * - User B offers what User A wants
  * 
@@ -45,31 +43,29 @@ public class MatchingService {
     }
     
     /**
-     * 1. Get the requesting user's offered and wanted skills
+     * 1. Get the requesting user's single offered and wanted skill
      * 2. For each other user in the system:
-     *    a. Get their offered and wanted skills
-     *    b. Check if there's a mutual match:
-     *       - Does the requesting user offer something the other user wants? AND
-     *       - Does the other user offer something the requesting user wants?
+     *    a. Get their single offered and wanted skill
+     *    b. Check if there's a perfect match:
+     *       - Does the requesting user offer what the other user wants? AND
+     *       - Does the other user offer what the requesting user wants?
      * 3. If both conditions are met, it's a perfect match
-     * 4. Return all perfect matched users (no duplicates)
+     * 4. Return all matched users
      */
     public List<Users> findMatchesForUser(Long userId) {
-        // Use a Set to prevent duplicate users in result
-        Set<Users> matchedUsers = new HashSet<>();
+        List<Users> matchedUsers = new ArrayList<>();
         
         // 1. Get the requesting user's skills
-        List<UserOffers> userOffers = userOffersRepository.findByUserId(userId);
-        List<UserWants> userWants = userWantsRepository.findByUserId(userId);
+        Optional<UserOffers> userOfferOpt = userOffersRepository.findByUserId(userId);
+        Optional<UserWants> userWantOpt = userWantsRepository.findByUserId(userId);
         
-        // Convert to simple skill name lists for easier comparison
-        List<String> offeredSkills = userOffers.stream()
-            .map(UserOffers::getSkillName)
-            .collect(Collectors.toList());
+        // Skip if user doesn't have both offer and want skills
+        if (userOfferOpt.isEmpty() || userWantOpt.isEmpty()) {
+            return matchedUsers; // Return empty list
+        }
         
-        List<String> wantedSkills = userWants.stream()
-            .map(UserWants::getSkillName)
-            .collect(Collectors.toList());
+        String userOfferedSkill = userOfferOpt.get().getSkillName();
+        String userWantedSkill = userWantOpt.get().getSkillName();
         
         // 2. Check each other user for compatibility
         List<Users> allUsers = userRepository.findAll();
@@ -81,40 +77,27 @@ public class MatchingService {
             }
             
             // 3. Get the other user's skills
-            List<UserOffers> otherOffers = userOffersRepository.findByUserId(otherUser.getId());
-            List<UserWants> otherWants = userWantsRepository.findByUserId(otherUser.getId());
+            Optional<UserOffers> otherOfferOpt = userOffersRepository.findByUserId(otherUser.getId());
+            Optional<UserWants> otherWantOpt = userWantsRepository.findByUserId(otherUser.getId());
             
-            // Convert to skill name lists
-            List<String> otherOfferedSkills = otherOffers.stream()
-                .map(UserOffers::getSkillName)
-                .collect(Collectors.toList());
-            
-            List<String> otherWantedSkills = otherWants.stream()
-                .map(UserWants::getSkillName)
-                .collect(Collectors.toList());
-            
-            // 4. Check for perfect matches
-            boolean hasMatch = false;
-            
-            // For each skill I offer, check if they want it
-            for (String myOffer : offeredSkills) {
-                // For each skill I want, check if they offer it
-                for (String myWant : wantedSkills) {
-                    if (otherWantedSkills.contains(myOffer) && otherOfferedSkills.contains(myWant)) {
-                        hasMatch = true;
-                        break; // Found a match, no need to check more combinations
-                    }
-                }
-                if (hasMatch) break; // Exit outer loop if match found
+            // Skip if other user doesn't have both offer and want skills
+            if (otherOfferOpt.isEmpty() || otherWantOpt.isEmpty()) {
+                continue;
             }
             
-            // 5.  Add user to results if they're compatible
+            String otherOfferedSkill = otherOfferOpt.get().getSkillName();
+            String otherWantedSkill = otherWantOpt.get().getSkillName();
+            
+            // 4. Check for perfect match (simplified!)
+            boolean hasMatch = userOfferedSkill.equals(otherWantedSkill) && 
+                              otherOfferedSkill.equals(userWantedSkill);
+            
+            // 5. Add user to results if they're compatible
             if (hasMatch) {
                 matchedUsers.add(otherUser);
             }
         }
         
-        // Convert Set back to List and return
-        return new ArrayList<>(matchedUsers);
+        return matchedUsers;
     }
 } 

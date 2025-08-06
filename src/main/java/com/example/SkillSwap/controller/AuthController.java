@@ -64,8 +64,8 @@ public class AuthController {
             Users savedUser = userRepository.save(newUser);
             
             // Load user skills (will be empty for new user)
-            savedUser.setUserOffers(userOffersRepository.findByUserId(savedUser.getId()));
-            savedUser.setUserWants(userWantsRepository.findByUserId(savedUser.getId()));
+            savedUser.setUserOffer(userOffersRepository.findByUserId(savedUser.getId()).orElse(null));
+            savedUser.setUserWant(userWantsRepository.findByUserId(savedUser.getId()).orElse(null));
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "User created successfully");
@@ -117,8 +117,8 @@ public class AuthController {
             }
             
             // Load user skills
-            user.setUserOffers(userOffersRepository.findByUserId(user.getId()));
-            user.setUserWants(userWantsRepository.findByUserId(user.getId()));
+            user.setUserOffer(userOffersRepository.findByUserId(user.getId()).orElse(null));
+            user.setUserWant(userWantsRepository.findByUserId(user.getId()).orElse(null));
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");

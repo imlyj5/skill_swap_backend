@@ -1,11 +1,11 @@
 package com.example.SkillSwap.model;
 
-import java.util.List;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.CascadeType;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
@@ -22,13 +22,13 @@ public class Users {
     private String availability;
     private String password;
 
-    @OneToMany(mappedBy = "user")
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference("user-offers")
-    private List<UserOffers> userOffers;
+    private UserOffers userOffer;
 
-    @OneToMany(mappedBy = "user")
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference("user-wants")
-    private List<UserWants> userWants;
+    private UserWants userWant;
 
     // Default constructor required by JPA
     public Users() {
@@ -112,19 +112,19 @@ public class Users {
         this.password = password;
     }
 
-    public List<UserOffers> getUserOffers() {
-        return userOffers;
+    public UserOffers getUserOffer() {
+        return userOffer;
     }
 
-    public void setUserOffers(List<UserOffers> userOffers) {
-        this.userOffers = userOffers;
+    public void setUserOffer(UserOffers userOffer) {
+        this.userOffer = userOffer;
     }
 
-    public List<UserWants> getUserWants() {
-        return userWants;
+    public UserWants getUserWant() {
+        return userWant;
     }
 
-    public void setUserWants(List<UserWants> userWants) {
-        this.userWants = userWants;
+    public void setUserWant(UserWants userWant) {
+        this.userWant = userWant;
     }
 }
