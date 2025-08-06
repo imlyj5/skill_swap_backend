@@ -15,6 +15,7 @@ import com.example.SkillSwap.repository.SkillRepository;
 import com.example.SkillSwap.model.Users;
 import com.example.SkillSwap.model.UserOffers;
 import com.example.SkillSwap.model.UserWants;
+import com.example.SkillSwap.model.Skill;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -68,14 +69,14 @@ public class ProfileController {
         // save the skill the user offers
         if (newUser.getUserOffer() != null) {
             newUser.getUserOffer().setUser(savedUser); // Link back to the user
-            resolveSkillReference(newUser.getUserOffer());
+            resolveSkillByName(newUser.getUserOffer());
             userOffersRepository.save(newUser.getUserOffer());
         }
         
         // save the skill the user wants to learn
         if (newUser.getUserWant() != null) {
             newUser.getUserWant().setUser(savedUser); // Link back to the user
-            resolveSkillReference(newUser.getUserWant());
+            resolveSkillByName(newUser.getUserWant());
             userWantsRepository.save(newUser.getUserWant());
         }
         
@@ -132,13 +133,13 @@ public class ProfileController {
         // Add new skills from the request  
         if (newUser.getUserOffer() != null) {
             newUser.getUserOffer().setUser(savedUser); // Link to the user
-            resolveSkillReference(newUser.getUserOffer());
+            resolveSkillByName(newUser.getUserOffer());
             userOffersRepository.save(newUser.getUserOffer());
         }
         
         if (newUser.getUserWant() != null) {
             newUser.getUserWant().setUser(savedUser); // Link to the user
-            resolveSkillReference(newUser.getUserWant());
+            resolveSkillByName(newUser.getUserWant());
             userWantsRepository.save(newUser.getUserWant());
         }
         
@@ -160,24 +161,48 @@ public class ProfileController {
     }
     
     /**
-     * Helper method to resolve skill ID to Skill entity for UserOffers
+     * Helper method to resolve skill name to skill ID for UserOffers
+     * Creates new skill if it doesn't exist
      */
-    private void resolveSkillReference(UserOffers userOffer) {
-        if (userOffer.getSkill() != null && userOffer.getSkill().getId() != null) {
-            // Frontend sent skillId, look up the full Skill entity
-            Long skillId = userOffer.getSkill().getId();
-            skillRepository.findById(skillId).ifPresent(userOffer::setSkill);
+    private void resolveSkillByName(UserOffers userOffer) {
+        if (userOffer.getSkillName() != null && !userOffer.getSkillName().trim().isEmpty()) {
+            String skillName = userOffer.getSkillName().trim();
+            
+            // Look up skill by name first
+            Skill skill = skillRepository.findByName(skillName).orElse(null);
+            
+            // If skill doesn't exist, create it with default category
+            if (skill == null) {
+                skill = new Skill(skillName, "General");
+                skill = skillRepository.save(skill);
+            }
+            
+            // Set both skillName and skillId
+            userOffer.setSkillName(skill.getName());
+            userOffer.setSkillId(skill.getId());
         }
     }
     
     /**
-     * Helper method to resolve skill ID to Skill entity for UserWants  
+     * Helper method to resolve skill name to skill ID for UserWants
+     * Creates new skill if it doesn't exist
      */
-    private void resolveSkillReference(UserWants userWant) {
-        if (userWant.getSkill() != null && userWant.getSkill().getId() != null) {
-            // Frontend sent skillId, look up the full Skill entity
-            Long skillId = userWant.getSkill().getId();
-            skillRepository.findById(skillId).ifPresent(userWant::setSkill);
+    private void resolveSkillByName(UserWants userWant) {
+        if (userWant.getSkillName() != null && !userWant.getSkillName().trim().isEmpty()) {
+            String skillName = userWant.getSkillName().trim();
+            
+            // Look up skill by name first
+            Skill skill = skillRepository.findByName(skillName).orElse(null);
+            
+            // If skill doesn't exist, create it with default category
+            if (skill == null) {
+                skill = new Skill(skillName, "General");
+                skill = skillRepository.save(skill);
+            }
+            
+            // Set both skillName and skillId
+            userWant.setSkillName(skill.getName());
+            userWant.setSkillId(skill.getId());
         }
     }
 }

@@ -8,17 +8,28 @@ ADD COLUMN skill_id BIGINT;
 ALTER TABLE user_wants 
 ADD COLUMN skill_id BIGINT;
 
--- Add foreign key constraints
-ALTER TABLE user_offers 
-ADD CONSTRAINT fk_user_offers_skill 
-FOREIGN KEY (skill_id) REFERENCES skill(id);
+-- Create missing skills from user_offers that don't exist in skill table
+INSERT INTO skill (name, category)
+SELECT DISTINCT uo.skill_name, 'General'
+FROM user_offers uo
+WHERE uo.skill_name IS NOT NULL 
+  AND uo.skill_name != ''
+  AND NOT EXISTS (
+    SELECT 1 FROM skill s WHERE s.name = uo.skill_name
+  );
 
-ALTER TABLE user_wants 
-ADD CONSTRAINT fk_user_wants_skill 
-FOREIGN KEY (skill_id) REFERENCES skill(id);
+-- Create missing skills from user_wants that don't exist in skill table
+INSERT INTO skill (name, category)
+SELECT DISTINCT uw.skill_name, 'General'
+FROM user_wants uw
+WHERE uw.skill_name IS NOT NULL 
+  AND uw.skill_name != ''
+  AND NOT EXISTS (
+    SELECT 1 FROM skill s WHERE s.name = uw.skill_name
+  );
 
 -- Update existing records to link to skills based on skillName
--- This will set skill_id based on matching skill names
+-- Now all skillNames should have corresponding skills
 UPDATE user_offers 
 SET skill_id = skill.id 
 FROM skill 
@@ -28,3 +39,12 @@ UPDATE user_wants
 SET skill_id = skill.id 
 FROM skill 
 WHERE user_wants.skill_name = skill.name;
+
+-- Add foreign key constraints
+ALTER TABLE user_offers 
+ADD CONSTRAINT fk_user_offers_skill 
+FOREIGN KEY (skill_id) REFERENCES skill(id);
+
+ALTER TABLE user_wants 
+ADD CONSTRAINT fk_user_wants_skill 
+FOREIGN KEY (skill_id) REFERENCES skill(id);
