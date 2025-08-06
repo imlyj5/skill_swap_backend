@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.SkillSwap.repository.UserRepository;
 import com.example.SkillSwap.repository.UserOffersRepository;
 import com.example.SkillSwap.repository.UserWantsRepository;
+import com.example.SkillSwap.repository.SkillRepository;
 import com.example.SkillSwap.model.Users;
 import com.example.SkillSwap.model.UserOffers;
 import com.example.SkillSwap.model.UserWants;
@@ -30,16 +31,19 @@ public class ProfileController {
     private final UserRepository repository;
     private final UserOffersRepository userOffersRepository;
     private final UserWantsRepository userWantsRepository;
+    private final SkillRepository skillRepository;
 
     /**
      * Constructor injection for all required repositories
      */
     ProfileController(UserRepository repository, 
                      UserOffersRepository userOffersRepository,
-                     UserWantsRepository userWantsRepository) {
+                     UserWantsRepository userWantsRepository,
+                     SkillRepository skillRepository) {
         this.repository = repository;
         this.userOffersRepository = userOffersRepository;
         this.userWantsRepository = userWantsRepository;
+        this.skillRepository = skillRepository;
     }
 
     @GetMapping("/profiles")
@@ -64,12 +68,14 @@ public class ProfileController {
         // save the skill the user offers
         if (newUser.getUserOffer() != null) {
             newUser.getUserOffer().setUser(savedUser); // Link back to the user
+            resolveSkillReference(newUser.getUserOffer());
             userOffersRepository.save(newUser.getUserOffer());
         }
         
         // save the skill the user wants to learn
         if (newUser.getUserWant() != null) {
             newUser.getUserWant().setUser(savedUser); // Link back to the user
+            resolveSkillReference(newUser.getUserWant());
             userWantsRepository.save(newUser.getUserWant());
         }
         
@@ -123,14 +129,16 @@ public class ProfileController {
         userOffersRepository.deleteByUserId(id);
         userWantsRepository.deleteByUserId(id);
         
-        // Add new skills from the request
+        // Add new skills from the request  
         if (newUser.getUserOffer() != null) {
             newUser.getUserOffer().setUser(savedUser); // Link to the user
+            resolveSkillReference(newUser.getUserOffer());
             userOffersRepository.save(newUser.getUserOffer());
         }
         
         if (newUser.getUserWant() != null) {
             newUser.getUserWant().setUser(savedUser); // Link to the user
+            resolveSkillReference(newUser.getUserWant());
             userWantsRepository.save(newUser.getUserWant());
         }
         
@@ -149,6 +157,28 @@ public class ProfileController {
         }
 
         repository.deleteById(id);
+    }
+    
+    /**
+     * Helper method to resolve skill ID to Skill entity for UserOffers
+     */
+    private void resolveSkillReference(UserOffers userOffer) {
+        if (userOffer.getSkill() != null && userOffer.getSkill().getId() != null) {
+            // Frontend sent skillId, look up the full Skill entity
+            Long skillId = userOffer.getSkill().getId();
+            skillRepository.findById(skillId).ifPresent(userOffer::setSkill);
+        }
+    }
+    
+    /**
+     * Helper method to resolve skill ID to Skill entity for UserWants  
+     */
+    private void resolveSkillReference(UserWants userWant) {
+        if (userWant.getSkill() != null && userWant.getSkill().getId() != null) {
+            // Frontend sent skillId, look up the full Skill entity
+            Long skillId = userWant.getSkill().getId();
+            skillRepository.findById(skillId).ifPresent(userWant::setSkill);
+        }
     }
 }
 

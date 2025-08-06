@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -19,7 +20,11 @@ public class UserOffers {
     @JsonBackReference("user-offers")
     private Users user;
     
-    private String skillName;
+    @ManyToOne
+    @JoinColumn(name = "skill_id")
+    private Skill skill;
+    
+    private String skillName;  // Keep for backward compatibility
     
     // Getters and setters
     public Long getId() {
@@ -44,5 +49,17 @@ public class UserOffers {
     
     public void setSkillName(String skillName) {
         this.skillName = skillName;
+    }
+    
+    public Skill getSkill() {
+        return skill;
+    }
+    
+    public void setSkill(Skill skill) {
+        this.skill = skill;
+        // Update skillName for backward compatibility
+        if (skill != null) {
+            this.skillName = skill.getName();
+        }
     }
 }
