@@ -18,7 +18,7 @@ import com.example.SkillSwap.repository.UserWantsRepository;
  */
 
 @RestController
-@RequestMapping("/api/matches")
+@RequestMapping("/matches")
 public class MatchingController {
     
     // matching logic service
