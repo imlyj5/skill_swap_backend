@@ -126,22 +126,9 @@ public class ProfileController {
         // Save the updated user profile
         Users savedUser = repository.save(existingUser);
         
-        // Delete existing skills for this user
-        userOffersRepository.deleteByUserId(id);
-        userWantsRepository.deleteByUserId(id);
-        
-        // Add new skills from the request  
-        if (newUser.getUserOffer() != null) {
-            newUser.getUserOffer().setUser(savedUser); // Link to the user
-            resolveSkillByName(newUser.getUserOffer());
-            userOffersRepository.save(newUser.getUserOffer());
-        }
-        
-        if (newUser.getUserWant() != null) {
-            newUser.getUserWant().setUser(savedUser); // Link to the user
-            resolveSkillByName(newUser.getUserWant());
-            userWantsRepository.save(newUser.getUserWant());
-        }
+        // Update or create user skills (don't delete existing ones)
+        updateOrCreateUserOffer(savedUser, newUser.getUserOffer());
+        updateOrCreateUserWant(savedUser, newUser.getUserWant());
         
         // Load and return the updated user with new skills
         savedUser.setUserOffer(userOffersRepository.findByUserId(savedUser.getId()).orElse(null));
@@ -203,6 +190,56 @@ public class ProfileController {
             // Set both skillName and skillId
             userWant.setSkillName(skill.getName());
             userWant.setSkillId(skill.getId());
+        }
+    }
+    
+    /**
+     * Update existing UserOffer or create new one
+     */
+    private void updateOrCreateUserOffer(Users user, UserOffers newUserOffer) {
+        if (newUserOffer != null && newUserOffer.getSkillName() != null && !newUserOffer.getSkillName().trim().isEmpty()) {
+            // Find existing UserOffer for this user
+            UserOffers existingOffer = userOffersRepository.findByUserId(user.getId()).orElse(null);
+            
+            if (existingOffer != null) {
+                // Update existing record
+                existingOffer.setSkillName(newUserOffer.getSkillName());
+                resolveSkillByName(existingOffer);
+                userOffersRepository.save(existingOffer);
+            } else {
+                // Create new record
+                newUserOffer.setUser(user);
+                resolveSkillByName(newUserOffer);
+                userOffersRepository.save(newUserOffer);
+            }
+        } else {
+            // Remove skill if empty skillName provided
+            userOffersRepository.deleteByUserId(user.getId());
+        }
+    }
+    
+    /**
+     * Update existing UserWant or create new one
+     */
+    private void updateOrCreateUserWant(Users user, UserWants newUserWant) {
+        if (newUserWant != null && newUserWant.getSkillName() != null && !newUserWant.getSkillName().trim().isEmpty()) {
+            // Find existing UserWant for this user
+            UserWants existingWant = userWantsRepository.findByUserId(user.getId()).orElse(null);
+            
+            if (existingWant != null) {
+                // Update existing record
+                existingWant.setSkillName(newUserWant.getSkillName());
+                resolveSkillByName(existingWant);
+                userWantsRepository.save(existingWant);
+            } else {
+                // Create new record
+                newUserWant.setUser(user);
+                resolveSkillByName(newUserWant);
+                userWantsRepository.save(newUserWant);
+            }
+        } else {
+            // Remove skill if empty skillName provided
+            userWantsRepository.deleteByUserId(user.getId());
         }
     }
 }
