@@ -7,7 +7,9 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
+import jakarta.persistence.Transient;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import java.util.List;
 
 @Entity
 @Table(name = "user_offers")
@@ -24,6 +26,9 @@ public class UserOffers {
     private Long skillId;
     
     private String skillName;
+    
+    @Transient
+    private List<String> tags;
     
     // Getters and setters
     public Long getId() {
@@ -56,5 +61,13 @@ public class UserOffers {
     
     public void setSkillId(Long skillId) {
         this.skillId = skillId;
+    }
+    
+    public List<String> getTags() {
+        return tags;
+    }
+    
+    public void setTags(List<String> tags) {
+        this.tags = tags;
     }
 }
