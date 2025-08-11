@@ -116,13 +116,15 @@ public class AuthController {
                     .body(Map.of("error", "Invalid email or password"));
             }
             
-            // Load user skills
-            user.setUserOffer(userOffersRepository.findByUserId(user.getId()).orElse(null));
-            user.setUserWant(userWantsRepository.findByUserId(user.getId()).orElse(null));
-            
+            // For faster login, don't load skills immediately
+            // Skills can be loaded separately when needed
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");
-            response.put("user", user);
+            response.put("userId", user.getId());
+            response.put("email", user.getEmail());
+            response.put("username", user.getUsername());
+            // Add other basic fields as needed
+            response.put("hasProfile", user.getUsername() != null && !user.getUsername().trim().isEmpty());
             
             return ResponseEntity.ok(response);
             

@@ -275,32 +275,5 @@ public class TagService {
         return skill;
     }
     
-    /**
-     * Generate tags for skill by name (used when creating new skills)
-     * @param skillName the skill name
-     * @return Skill with generated tags
-     */
-    public Skill createSkillWithTags(String skillName, String category) {
-        List<String> tags = generateTagsForSkill(skillName);
-        Skill skill = new Skill(skillName, category, tags);
-        return skillRepository.save(skill);
-    }
-    
-    /**
-     * Get user-friendly suggestion message
-     * @param userSkills list of user's skills
-     * @param suggestedTags all tags from user's skills
-     * @return Friendly message
-     */
-    public String generateSuggestionMessage(List<String> userSkills, Set<String> suggestedTags) {
-        if (userSkills.isEmpty()) {
-            return "Add some skills to your profile to get personalized suggestions!";
-        }
-        
-        String skillsText = String.join(" and ", userSkills);
-        String tagsText = String.join(", ", suggestedTags);
-            
-        return String.format("Since you're interested in %s, we think you might also be interested in: %s", 
-                           skillsText, tagsText);
-    }
+
 }

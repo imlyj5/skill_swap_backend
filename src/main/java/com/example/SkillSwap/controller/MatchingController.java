@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import org.springframework.web.bind.annotation.*;
 import com.example.SkillSwap.service.MatchingService;
+import com.example.SkillSwap.util.SkillTagUtil;
 import com.example.SkillSwap.model.Users;
 import com.example.SkillSwap.model.UserOffers;
 import com.example.SkillSwap.model.UserWants;
@@ -34,16 +35,19 @@ public class MatchingController {
     private final UserOffersRepository userOffersRepository;
     private final UserWantsRepository userWantsRepository;
     private final SkillRepository skillRepository;
+    private final SkillTagUtil skillTagUtil;
 
     //Constructor for all dependencies
     public MatchingController(MatchingService matchingService,
                              UserOffersRepository userOffersRepository,
                              UserWantsRepository userWantsRepository,
-                             SkillRepository skillRepository) {
+                             SkillRepository skillRepository,
+                             SkillTagUtil skillTagUtil) {
         this.matchingService = matchingService;
         this.userOffersRepository = userOffersRepository;
         this.userWantsRepository = userWantsRepository;
         this.skillRepository = skillRepository;
+        this.skillTagUtil = skillTagUtil;
     }
     
     @GetMapping("/{userId}")
@@ -95,7 +99,7 @@ public class MatchingController {
                 user.setUserWant(userWant);
                 
                 // Populate tags for this user's skills
-                populateSkillTags(user);
+                skillTagUtil.populateSkillTags(user);
             }
         }
         
@@ -128,22 +132,7 @@ public class MatchingController {
         return response;
     }
     
-    /**
-     * Helper method to populate tags for UserOffers and UserWants
-     */
-    private void populateSkillTags(Users user) {
-        // Populate tags for UserOffer
-        if (user.getUserOffer() != null && user.getUserOffer().getSkillId() != null) {
-            skillRepository.findById(user.getUserOffer().getSkillId())
-                .ifPresent(skill -> user.getUserOffer().setTags(skill.getTags()));
-        }
-        
-        // Populate tags for UserWant
-        if (user.getUserWant() != null && user.getUserWant().getSkillId() != null) {
-            skillRepository.findById(user.getUserWant().getSkillId())
-                .ifPresent(skill -> user.getUserWant().setTags(skill.getTags()));
-        }
-    }
+
     
 
     
