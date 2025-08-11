@@ -34,6 +34,18 @@ public class SkillController {
         this.userWantsRepository = userWantsRepository;
     }
     
+    @GetMapping("/skills")
+    List<Skill> getAllSkills() {
+        return skillRepository.findAll();
+    }
+    
+    @GetMapping("/skills/{id}")
+    ResponseEntity<Skill> getSkillById(@PathVariable Long id) {
+        return skillRepository.findById(id)
+            .map(skill -> ResponseEntity.ok(skill))
+            .orElse(ResponseEntity.notFound().build());
+    }
+    
     @PostMapping("/skills")
     Skill createSkill(@RequestBody Skill skill) {
         // Generate tags for new skills

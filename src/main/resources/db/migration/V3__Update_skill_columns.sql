@@ -1,4 +1,4 @@
--- Update user_offers table to use skill_name instead of skill_id
+`-- Update user_offers table to use skill_name instead of skill_id
 ALTER TABLE user_offers DROP COLUMN IF EXISTS skill_id;
 ALTER TABLE user_offers ADD COLUMN skill_name VARCHAR(255) NOT NULL DEFAULT '';
 

@@ -22,6 +22,10 @@ public class SkillTagUtil {
      * @param user the user whose skill tags should be populated
      */
     public void populateSkillTags(Users user) {
+        if (user == null) {
+            return;
+        }
+        
         // Populate tags for UserOffer
         if (user.getUserOffer() != null && user.getUserOffer().getSkillId() != null) {
             skillRepository.findById(user.getUserOffer().getSkillId())

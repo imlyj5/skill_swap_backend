@@ -175,6 +175,10 @@ public class TagService {
      * Fallback rule-based tag generation (original logic)
      */
     private List<String> generateTagsWithRules(String skillName) {
+        if (skillName == null || skillName.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        
         String lowerSkill = skillName.toLowerCase();
         Set<String> tags = new HashSet<>();
         
@@ -255,12 +259,12 @@ public class TagService {
     /**
      * Update skill with generated tags
      * @param skillId the skill ID
-     * @return Updated skill with tags
+     * @return Updated skill with tags, or null if skill not found
      */
     public Skill generateAndSaveTagsForSkill(Long skillId) {
         Optional<Skill> skillOpt = skillRepository.findById(skillId);
         if (skillOpt.isEmpty()) {
-            throw new RuntimeException("Skill not found with id: " + skillId);
+            return null;
         }
         
         Skill skill = skillOpt.get();
