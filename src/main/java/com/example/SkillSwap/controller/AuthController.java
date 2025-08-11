@@ -35,38 +35,79 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
         }
         
-        // Check password (in a real app, you'd hash the password)
-        if (!password.equals(user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
+        try {
+            // Create new user using the custom constructor
+            Users newUser = new Users(email, password);
+            Users savedUser = userRepository.save(newUser);
+            
+            // Load user skills (will be empty for new user)
+            savedUser.setUserOffer(userOffersRepository.findByUserId(savedUser.getId()).orElse(null));
+            savedUser.setUserWant(userWantsRepository.findByUserId(savedUser.getId()).orElse(null));
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "User created successfully");
+            response.put("user", savedUser);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to create user: " + e.getMessage()));
         }
-        
-        // Return user data (without password)
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", user.getId());
-        response.put("username", user.getUsername());
-        response.put("email", user.getEmail());
-        response.put("message", "Login successful");
-        
-        return ResponseEntity.ok(response);
     }
     
-    @PostMapping("/auth/register")
-    public ResponseEntity<?> register(@RequestBody Users newUser) {
-        // Check if email already exists
-        if (userRepository.existsByEmail(newUser.getEmail())) {
-            return ResponseEntity.badRequest().body("Email already exists");
+    /**
+     * User login endpoint
+     * Authenticates user with email and password
+     */
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials) {
+        String email = credentials.get("email");
+        String password = credentials.get("password");
+        
+        // Validate input
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Email is required"));
         }
         
-        // Save the new user
-        Users savedUser = userRepository.save(newUser);
+        if (password == null || password.trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Password is required"));
+        }
         
-        // Return user data (without password)
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", savedUser.getId());
-        response.put("username", savedUser.getUsername());
-        response.put("email", savedUser.getEmail());
-        response.put("message", "Registration successful");
-        
-        return ResponseEntity.ok(response);
+        try {
+            // Find user by email
+            Optional<Users> userOptional = userRepository.findByEmail(email);
+            
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid email or password"));
+            }
+            
+            Users user = userOptional.get();
+            
+            // Check password (simple string comparison for now)
+            if (!password.equals(user.getPassword())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid email or password"));
+            }
+            
+            // For faster login, don't load skills immediately
+            // Skills can be loaded separately when needed
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Login successful");
+            response.put("userId", user.getId());
+            response.put("email", user.getEmail());
+            response.put("username", user.getUsername());
+            // Add other basic fields as needed
+            response.put("hasProfile", user.getUsername() != null && !user.getUsername().trim().isEmpty());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Login failed: " + e.getMessage()));
+        }
     }
 }
