@@ -26,9 +26,30 @@ It makes learning social, fun, and free. Inspired by social matching platforms, 
 - **Database**: PostgreSQL
 - **ORM**: Hibernate/JPA
 - **Migration**: Flyway
-- **Testing**: JUnit 5
+- **Testing**: JUnit 5, MockMvc
 - **Build**: Maven
 - **AI**: Google Gemini API
+
+## 📦 Dependencies
+
+### Core Dependencies
+- **Spring Boot Starter Web** - REST API framework
+- **Spring Boot Starter Data JPA** - Database ORM
+- **PostgreSQL** - Production database
+- **Flyway Core** - Database migration tool
+- **Flyway Database PostgreSQL** - PostgreSQL migration support
+
+### HTTP & JSON
+- **OkHttp** - HTTP client for Gemini AI API
+- **Jackson Databind** - JSON processing
+
+### Testing
+- **Spring Boot Starter Test** - Testing framework
+- **JUnit 5** - Unit testing
+- **MockMvc** - Integration testing
+
+### Utilities
+- **Spring Dotenv** - Environment variable loading
 
 ## 📋 Prerequisites
 
@@ -41,7 +62,7 @@ It makes learning social, fun, and free. Inspired by social matching platforms, 
 
 ### 1. Clone the Repository
 ```bash
-git clone <https://github.com/imlyj5/skill_swap_backend>
+git clone https://github.com/imlyj5/skill_swap_backend
 cd skill_swap_backend
 ```
 
