@@ -129,7 +129,6 @@ class MatchingServiceTest {
         when(userWantsRepository.findByUserId(1L)).thenReturn(Optional.of(user1Want));
         when(userWantsRepository.findBySkillName("JavaScript")).thenReturn(Arrays.asList(user2Want));
         when(userOffersRepository.findBySkillName("Python")).thenReturn(Arrays.asList(user2Offer));
-        when(tagService.generateTagsForSkill(anyString())).thenReturn(Arrays.asList("general"));
 
         // When
         List<MatchingService.MatchResult> results = matchingService.findMatchesWithRankingForUser(1L);
@@ -189,7 +188,7 @@ class MatchingServiceTest {
 
     @Test
     void testFindMatchesWithRankingForUser_WithGoodMatches() {
-        // Given: AI is enabled and there are good matches based on tags
+        // Given: There are good matches based on tags
         when(userOffersRepository.findByUserId(1L)).thenReturn(Optional.of(user1Offer));
         when(userWantsRepository.findByUserId(1L)).thenReturn(Optional.of(user1Want));
         when(userWantsRepository.findBySkillName("JavaScript")).thenReturn(Arrays.asList());
@@ -199,7 +198,6 @@ class MatchingServiceTest {
         when(skillRepository.findById(1L)).thenReturn(Optional.of(skill1));
         when(skillRepository.findById(2L)).thenReturn(Optional.of(skill2));
         when(skillRepository.findById(3L)).thenReturn(Optional.of(skill3));
-        when(tagService.generateTagsForSkill(anyString())).thenReturn(Arrays.asList("technology", "programming"));
 
         // When
         List<MatchingService.MatchResult> results = matchingService.findMatchesWithRankingForUser(1L);
@@ -207,12 +205,12 @@ class MatchingServiceTest {
         // Then
         assertNotNull(results);
         // Should find good matches based on tag overlap
-        assertTrue(results.size() >= 0); // Can be 0 or more depending on AI logic
+        assertTrue(results.size() >= 0); // Can be 0 or more depending on stored tags
     }
 
     @Test
     void testFindMatchesWithRankingForUser_WithPotentialMatches() {
-        // Given: AI is enabled and there are potential matches
+        // Given: There are potential matches based on tags
         when(userOffersRepository.findByUserId(1L)).thenReturn(Optional.of(user1Offer));
         when(userWantsRepository.findByUserId(1L)).thenReturn(Optional.of(user1Want));
         when(userWantsRepository.findBySkillName("JavaScript")).thenReturn(Arrays.asList());
@@ -222,7 +220,6 @@ class MatchingServiceTest {
         when(skillRepository.findById(1L)).thenReturn(Optional.of(skill1));
         when(skillRepository.findById(2L)).thenReturn(Optional.of(skill2));
         when(skillRepository.findById(3L)).thenReturn(Optional.of(skill3));
-        when(tagService.generateTagsForSkill(anyString())).thenReturn(Arrays.asList("technology", "programming"));
 
         // When
         List<MatchingService.MatchResult> results = matchingService.findMatchesWithRankingForUser(1L);
@@ -230,24 +227,23 @@ class MatchingServiceTest {
         // Then
         assertNotNull(results);
         // Should find potential matches
-        assertTrue(results.size() >= 0); // Can be 0 or more depending on AI logic
+        assertTrue(results.size() >= 0); // Can be 0 or more depending on stored tags
     }
 
     @Test
     void testFindMatchesWithRankingForUser_WithAIDisabled() {
-        // Given: AI is disabled (TagService returns general tags)
+        // Given: No perfect matches and no tag overlap
         when(userOffersRepository.findByUserId(1L)).thenReturn(Optional.of(user1Offer));
         when(userWantsRepository.findByUserId(1L)).thenReturn(Optional.of(user1Want));
         when(userWantsRepository.findBySkillName("JavaScript")).thenReturn(Arrays.asList());
         when(userOffersRepository.findBySkillName("Python")).thenReturn(Arrays.asList());
-        when(tagService.generateTagsForSkill(anyString())).thenReturn(Arrays.asList("general"));
 
         // When
         List<MatchingService.MatchResult> results = matchingService.findMatchesWithRankingForUser(1L);
 
         // Then
         assertNotNull(results);
-        // Should only find perfect matches when AI is disabled
+        // Should only find perfect matches when no tag overlap
         assertTrue(results.isEmpty());
     }
 
@@ -287,7 +283,6 @@ class MatchingServiceTest {
         when(userWantsRepository.findByUserId(1L)).thenReturn(Optional.of(user1Want));
         when(userWantsRepository.findBySkillName("JavaScript")).thenReturn(Arrays.asList(user2Want, user4Want));
         when(userOffersRepository.findBySkillName("Python")).thenReturn(Arrays.asList(user2Offer, user4Offer));
-        when(tagService.generateTagsForSkill(anyString())).thenReturn(Arrays.asList("general"));
 
         // When
         List<MatchingService.MatchResult> results = matchingService.findMatchesWithRankingForUser(1L);
@@ -311,7 +306,6 @@ class MatchingServiceTest {
         when(userWantsRepository.findByUserId(1L)).thenReturn(Optional.of(user1Want));
         when(userWantsRepository.findBySkillName("JavaScript")).thenReturn(Arrays.asList());
         when(userOffersRepository.findBySkillName("Python")).thenReturn(Arrays.asList());
-        when(tagService.generateTagsForSkill(anyString())).thenReturn(Arrays.asList("general"));
 
         // When
         List<MatchingService.MatchResult> results = matchingService.findMatchesWithRankingForUser(1L);
@@ -332,7 +326,6 @@ class MatchingServiceTest {
         when(userWantsRepository.findByUserId(1L)).thenReturn(Optional.of(user1Want));
         when(userWantsRepository.findBySkillName("JavaScript")).thenReturn(Arrays.asList());
         when(userOffersRepository.findBySkillName("Python")).thenReturn(Arrays.asList());
-        when(tagService.generateTagsForSkill(anyString())).thenReturn(Arrays.asList("general"));
 
         // When
         List<MatchingService.MatchResult> results = matchingService.findMatchesWithRankingForUser(1L);

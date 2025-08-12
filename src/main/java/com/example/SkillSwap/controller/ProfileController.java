@@ -1,5 +1,6 @@
 package com.example.SkillSwap.controller;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,8 +14,7 @@ import com.example.SkillSwap.repository.UserOffersRepository;
 import com.example.SkillSwap.repository.UserWantsRepository;
 import com.example.SkillSwap.repository.SkillRepository;
 import com.example.SkillSwap.service.TagService;
-import com.example.SkillSwap.util.SkillTagUtil;
-import com.example.SkillSwap.util.SkillResolutionUtil;
+
 import com.example.SkillSwap.model.Users;
 import com.example.SkillSwap.model.UserOffers;
 import com.example.SkillSwap.model.UserWants;
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * ProfileController manages all user profile operations including:
  * - Creating new user profiles
- * - Reading user profiles (individual and all users)
+ * - Reading user profiles
  * - Updating user profiles and their skills
  * - Deleting user profiles
  */
@@ -37,8 +37,6 @@ public class ProfileController {
     private final UserWantsRepository userWantsRepository;
     private final SkillRepository skillRepository;
     private final TagService tagService;
-    private final SkillTagUtil skillTagUtil;
-    private final SkillResolutionUtil skillResolutionUtil;
 
     /**
      * Constructor injection for all required repositories
@@ -47,16 +45,12 @@ public class ProfileController {
                      UserOffersRepository userOffersRepository,
                      UserWantsRepository userWantsRepository,
                      SkillRepository skillRepository,
-                     TagService tagService,
-                     SkillTagUtil skillTagUtil,
-                     SkillResolutionUtil skillResolutionUtil) {
+                     TagService tagService) {
         this.repository = repository;
         this.userOffersRepository = userOffersRepository;
         this.userWantsRepository = userWantsRepository;
         this.skillRepository = skillRepository;
         this.tagService = tagService;
-        this.skillTagUtil = skillTagUtil;
-        this.skillResolutionUtil = skillResolutionUtil;
     }
 
     @GetMapping("/profiles")
@@ -67,7 +61,7 @@ public class ProfileController {
         for (Users user : users) {
             user.setUserOffer(userOffersRepository.findByUserId(user.getId()).orElse(null));
             user.setUserWant(userWantsRepository.findByUserId(user.getId()).orElse(null));
-            skillTagUtil.populateSkillTags(user);
+            populateSkillTags(user);
         }
         
         return users;
@@ -82,21 +76,21 @@ public class ProfileController {
         // save the skill the user offers
         if (newUser.getUserOffer() != null) {
             newUser.getUserOffer().setUser(savedUser); // Link back to the user
-            resolveSkillByName(newUser.getUserOffer());
+            resolveSkillForUserOffer(newUser.getUserOffer());
             userOffersRepository.save(newUser.getUserOffer());
         }
         
         // save the skill the user wants to learn
         if (newUser.getUserWant() != null) {
             newUser.getUserWant().setUser(savedUser); // Link back to the user
-            resolveSkillByName(newUser.getUserWant());
+            resolveSkillForUserWant(newUser.getUserWant());
             userWantsRepository.save(newUser.getUserWant());
         }
         
         // Reload the user with associated skills and populate tags for the response
         savedUser.setUserOffer(userOffersRepository.findByUserId(savedUser.getId()).orElse(null));
         savedUser.setUserWant(userWantsRepository.findByUserId(savedUser.getId()).orElse(null));
-        skillTagUtil.populateSkillTags(savedUser);
+        populateSkillTags(savedUser);
         
         return savedUser;
     }
@@ -109,7 +103,7 @@ public class ProfileController {
         // Load the user's skills and populate tags
         user.setUserOffer(userOffersRepository.findByUserId(id).orElse(null));
         user.setUserWant(userWantsRepository.findByUserId(id).orElse(null));
-        skillTagUtil.populateSkillTags(user);
+        populateSkillTags(user);
         
         return user;
     }
@@ -144,7 +138,7 @@ public class ProfileController {
             existingUser.setAvailability(newUser.getAvailability());
         }
         
-        // Only update password if it's provided (not null or empty)
+        // Only update password if it's provided
         if (newUser.getPassword() != null && !newUser.getPassword().trim().isEmpty()) {
             existingUser.setPassword(newUser.getPassword());
         }
@@ -159,7 +153,7 @@ public class ProfileController {
         // Load and return the updated user with new skills and populate tags
         savedUser.setUserOffer(userOffersRepository.findByUserId(savedUser.getId()).orElse(null));
         savedUser.setUserWant(userWantsRepository.findByUserId(savedUser.getId()).orElse(null));
-        skillTagUtil.populateSkillTags(savedUser);
+        populateSkillTags(savedUser);
         
         return savedUser;
     }
@@ -178,9 +172,9 @@ public class ProfileController {
      * Helper method to resolve skill name to skill ID for UserOffers
      * Creates new skill if it doesn't exist and auto-generates AI tags
      */
-    private void resolveSkillByName(UserOffers userOffer) {
+    private void resolveSkillForUserOffer(UserOffers userOffer) {
         if (userOffer.getSkillName() != null && !userOffer.getSkillName().trim().isEmpty()) {
-            Skill skill = skillResolutionUtil.resolveSkillByName(userOffer.getSkillName());
+            Skill skill = resolveSkillByName(userOffer.getSkillName());
             if (skill != null) {
                 // Set both skillName and skillId
                 userOffer.setSkillName(skill.getName());
@@ -193,9 +187,9 @@ public class ProfileController {
      * Helper method to resolve skill name to skill ID for UserWants
      * Creates new skill if it doesn't exist and auto-generates AI tags
      */
-    private void resolveSkillByName(UserWants userWant) {
+    private void resolveSkillForUserWant(UserWants userWant) {
         if (userWant.getSkillName() != null && !userWant.getSkillName().trim().isEmpty()) {
-            Skill skill = skillResolutionUtil.resolveSkillByName(userWant.getSkillName());
+            Skill skill = resolveSkillByName(userWant.getSkillName());
             if (skill != null) {
                 // Set both skillName and skillId
                 userWant.setSkillName(skill.getName());
@@ -217,12 +211,12 @@ public class ProfileController {
             if (existingOffer != null) {
                 // Update existing record
                 existingOffer.setSkillName(newUserOffer.getSkillName());
-                resolveSkillByName(existingOffer);
+                resolveSkillForUserOffer(existingOffer);
                 userOffersRepository.save(existingOffer);
             } else {
                 // Create new record
                 newUserOffer.setUser(user);
-                resolveSkillByName(newUserOffer);
+                resolveSkillForUserOffer(newUserOffer);
                 userOffersRepository.save(newUserOffer);
             }
         } else {
@@ -242,12 +236,12 @@ public class ProfileController {
             if (existingWant != null) {
                 // Update existing record
                 existingWant.setSkillName(newUserWant.getSkillName());
-                resolveSkillByName(existingWant);
+                resolveSkillForUserWant(existingWant);
                 userWantsRepository.save(existingWant);
             } else {
                 // Create new record
                 newUserWant.setUser(user);
-                resolveSkillByName(newUserWant);
+                resolveSkillForUserWant(newUserWant);
                 userWantsRepository.save(newUserWant);
             }
         } else {
@@ -255,6 +249,65 @@ public class ProfileController {
             userWantsRepository.deleteByUserId(user.getId());
         }
     }
+    
+    /**
+     * Helper method to populate tags for UserOffers and UserWants
+     * @param user the user whose skill tags should be populated
+     */
+    private void populateSkillTags(Users user) {
+        if (user == null) {
+            return;
+        }
+        
+        // Populate tags for UserOffer
+        if (user.getUserOffer() != null && user.getUserOffer().getSkillId() != null) {
+            Optional<Skill> skillOpt = skillRepository.findById(user.getUserOffer().getSkillId());
+            if (skillOpt.isPresent()) {
+                user.getUserOffer().setTags(skillOpt.get().getTags());
+            }
+        }
+        
+        // Populate tags for UserWant
+        if (user.getUserWant() != null && user.getUserWant().getSkillId() != null) {
+            Optional<Skill> skillOpt = skillRepository.findById(user.getUserWant().getSkillId());
+            if (skillOpt.isPresent()) {
+                user.getUserWant().setTags(skillOpt.get().getTags());
+            }
+        }
+    }
+    
+    /**
+     * Helper method to resolve skill name to skill ID
+     * Creates new skill if it doesn't exist and auto-generates AI tags
+     * @param skillName the skill name to resolve
+     * @return Skill object with ID and tags
+     */
+    private Skill resolveSkillByName(String skillName) {
+        if (skillName == null || skillName.trim().isEmpty()) {
+            return null;
+        }
+        
+        String trimmedSkillName = skillName.trim();
+        
+        // Look up skill by name first
+        Optional<Skill> skillOpt = skillRepository.findFirstByName(trimmedSkillName);
+        Skill skill;
+        
+        if (skillOpt.isPresent()) {
+            skill = skillOpt.get();
+        } else {
+            // If skill doesn't exist, create it with AI-generated tags
+            skill = new Skill(trimmedSkillName, "General");
+            // Generate AI tags for new skill
+            List<String> tags = tagService.generateTagsForSkill(trimmedSkillName);
+            skill.setTags(tags);
+            skill = skillRepository.save(skill);
+        }
+        
+        return skill;
+    }
+    
+
 }
 
 

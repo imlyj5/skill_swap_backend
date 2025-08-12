@@ -41,9 +41,13 @@ public class SkillController {
     
     @GetMapping("/skills/{id}")
     ResponseEntity<Skill> getSkillById(@PathVariable Long id) {
-        return skillRepository.findById(id)
-            .map(skill -> ResponseEntity.ok(skill))
-            .orElse(ResponseEntity.notFound().build());
+        // Find skill by ID
+        Optional<Skill> skillOpt = skillRepository.findById(id);
+        if (skillOpt.isPresent()) {
+            return ResponseEntity.ok(skillOpt.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
     
     @PostMapping("/skills")
@@ -70,7 +74,7 @@ public class SkillController {
             List<String> offerSuggestedTags = new ArrayList<>();
             List<String> wantSuggestedTags = new ArrayList<>();
             
-            // Process offered skill (what they can teach)
+            // Process offered skill
             if (userOffer.isPresent() && userOffer.get().getSkillId() != null) {
                 Optional<Skill> skill = skillRepository.findById(userOffer.get().getSkillId());
                 if (skill.isPresent()) {
@@ -80,7 +84,7 @@ public class SkillController {
                 }
             }
             
-            // Process wanted skill (what they want to learn)  
+            // Process wanted skill  
             if (userWant.isPresent() && userWant.get().getSkillId() != null) {
                 Optional<Skill> skill = skillRepository.findById(userWant.get().getSkillId());
                 if (skill.isPresent()) {
@@ -101,4 +105,6 @@ public class SkillController {
                 .body(Map.of("error", "Failed to get suggestions: " + e.getMessage()));
         }
     }
+    
+
 }

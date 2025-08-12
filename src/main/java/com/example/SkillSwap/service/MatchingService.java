@@ -6,20 +6,19 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.HashMap;
 
 import org.springframework.stereotype.Service;
 import com.example.SkillSwap.repository.UserOffersRepository;
 import com.example.SkillSwap.repository.UserWantsRepository;
 import com.example.SkillSwap.repository.SkillRepository;
-import com.example.SkillSwap.service.TagService;
 import com.example.SkillSwap.model.Users;
 import com.example.SkillSwap.model.UserOffers;
 import com.example.SkillSwap.model.UserWants;
 import com.example.SkillSwap.model.Skill;
 
 /**
- * MatchingService implements the core skill-matching logic with AI intelligence.
+ * MatchingService implements the core skill-matching logic with AI.
  * 
  * This service finds users who are compatible for skill exchanges using:
  * 1. AI Tag Matching (Default): Match users based on AI-generated skill tags
@@ -53,7 +52,7 @@ public class MatchingService {
 
     
     /**
-     * Enhanced matching with actual rank information
+     * Matching with rank information
      */
     public List<MatchResult> findMatchesWithRankingForUser(Long userId) {
         // Get the requesting user's skills
@@ -80,22 +79,17 @@ public class MatchingService {
             }
         }
         
-        // Check if AI is enabled
-        boolean aiEnabled = tagService != null && isAIEnabled();
+        // RANK 2: Good Matches - Exact tag matches (using stored tags)
+        List<Users> goodMatches = findGoodMatches(userId, userOffer, userWant, processedUserIds);
+        for (Users user : goodMatches) {
+            rankedMatches.add(new MatchResult(user, 2, "Good Match"));
+            processedUserIds.add(user.getId());
+        }
         
-        if (aiEnabled) {
-            // RANK 2: Good Matches - Exact tag matches
-            List<Users> goodMatches = findGoodMatches(userId, userOffer, userWant, processedUserIds);
-            for (Users user : goodMatches) {
-                rankedMatches.add(new MatchResult(user, 2, "Good Match"));
-                processedUserIds.add(user.getId());
-            }
-            
-            // RANK 3: Potential Matches - Skills that offer what you want to learn
-            List<Users> potentialMatches = findPotentialMatches(userId, userWant, processedUserIds);
-            for (Users user : potentialMatches) {
-                rankedMatches.add(new MatchResult(user, 3, "Potential Match"));
-            }
+        // RANK 3: Potential Matches - Skills that offer what you want to learn
+        List<Users> potentialMatches = findPotentialMatches(userId, userWant, processedUserIds);
+        for (Users user : potentialMatches) {
+            rankedMatches.add(new MatchResult(user, 3, "Potential Match"));
         }
         
         return rankedMatches;
@@ -129,8 +123,13 @@ public class MatchingService {
             }
             
             // Check if this user also offers what I want
-            boolean alsoOffersWhatIWant = usersWhoOfferMyWantedSkill.stream()
-                .anyMatch(offer -> offer.getUser().getId().equals(potentialMatchUserId));
+            boolean alsoOffersWhatIWant = false;
+            for (UserOffers offer : usersWhoOfferMyWantedSkill) {
+                if (offer.getUser().getId().equals(potentialMatchUserId)) {
+                    alsoOffersWhatIWant = true;
+                    break;
+                }
+            }
             
             if (alsoOffersWhatIWant) {
                 perfectMatches.add(userWantMatch.getUser());
@@ -160,10 +159,15 @@ public class MatchingService {
         List<UserWants> allWants = userWantsRepository.findAll();
         
         // Group by user ID for efficient lookup
-        Map<Long, UserOffers> userToOffer = allOffers.stream()
-            .collect(Collectors.toMap(offer -> offer.getUser().getId(), offer -> offer));
-        Map<Long, UserWants> userToWant = allWants.stream()
-            .collect(Collectors.toMap(want -> want.getUser().getId(), want -> want));
+        Map<Long, UserOffers> userToOffer = new HashMap<>();
+        for (UserOffers offer : allOffers) {
+            userToOffer.put(offer.getUser().getId(), offer);
+        }
+        
+        Map<Long, UserWants> userToWant = new HashMap<>();
+        for (UserWants want : allWants) {
+            userToWant.put(want.getUser().getId(), want);
+        }
         
         for (Long otherUserId : userToOffer.keySet()) {
             if (otherUserId.equals(userId) || excludeUserIds.contains(otherUserId)) {
@@ -185,7 +189,11 @@ public class MatchingService {
             boolean direction2 = hasTagOverlap(otherOfferTags, userWantTags); // Their offer matches my want
             
             if (direction1 && direction2) {
-                getUserById(otherUserId).ifPresent(goodMatches::add);
+                // Add user if found
+                Optional<Users> userOpt = getUserById(otherUserId);
+                if (userOpt.isPresent()) {
+                    goodMatches.add(userOpt.get());
+                }
             }
         }
         
@@ -211,10 +219,15 @@ public class MatchingService {
         List<UserWants> allWants = userWantsRepository.findAll();
         
         // Group by user ID for efficient lookup
-        Map<Long, UserOffers> userToOffer = allOffers.stream()
-            .collect(Collectors.toMap(offer -> offer.getUser().getId(), offer -> offer));
-        Map<Long, UserWants> userToWant = allWants.stream()
-            .collect(Collectors.toMap(want -> want.getUser().getId(), want -> want));
+        Map<Long, UserOffers> userToOffer = new HashMap<>();
+        for (UserOffers offer : allOffers) {
+            userToOffer.put(offer.getUser().getId(), offer);
+        }
+        
+        Map<Long, UserWants> userToWant = new HashMap<>();
+        for (UserWants want : allWants) {
+            userToWant.put(want.getUser().getId(), want);
+        }
         
         for (Long otherUserId : userToOffer.keySet()) {
             if (otherUserId.equals(userId) || excludeUserIds.contains(otherUserId)) {
@@ -235,26 +248,18 @@ public class MatchingService {
             boolean otherOffersWhatIWant = hasTagOverlap(otherOfferTags, userWantTags);
             
             if (otherOffersWhatIWant) {
-                getUserById(otherUserId).ifPresent(potentialMatches::add);
+                // Add user if found
+                Optional<Users> userOpt = getUserById(otherUserId);
+                if (userOpt.isPresent()) {
+                    potentialMatches.add(userOpt.get());
+                }
             }
         }
         
         return potentialMatches;
     }
     
-    /**
-     * Check if AI is enabled (has valid API key)
-     */
-    private boolean isAIEnabled() {
-        try {
-            // Try to generate tags for a test skill - if it works, AI is enabled
-            List<String> testTags = tagService.generateTagsForSkill("test");
-            return testTags != null && !testTags.isEmpty() && 
-                   !(testTags.size() == 1 && testTags.contains("general"));
-        } catch (Exception e) {
-            return false;
-        }
-    }
+
     
     /**
      * Helper method to get user by ID
@@ -294,7 +299,13 @@ public class MatchingService {
      * Helper method to check if two tag sets have any overlap
      */
     private boolean hasTagOverlap(Set<String> tags1, Set<String> tags2) {
-        return tags1.stream().anyMatch(tags2::contains);
+        // Check if any tag from tags1 is in tags2
+        for (String tag1 : tags1) {
+            if (tags2.contains(tag1)) {
+                return true;
+            }
+        }
+        return false;
     }
     
     /**

@@ -21,4 +21,6 @@ public interface UserOffersRepository extends JpaRepository<UserOffers, Long> {
      * @return List of UserOffers for the specified users
      */
     List<UserOffers> findByUserIdIn(List<Long> userIds);
+    
+
 }

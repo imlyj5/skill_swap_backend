@@ -4,12 +4,11 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Arrays;
 import java.util.Optional;
 
 import org.springframework.web.bind.annotation.*;
 import com.example.SkillSwap.service.MatchingService;
-import com.example.SkillSwap.util.SkillTagUtil;
+
 import com.example.SkillSwap.model.Users;
 import com.example.SkillSwap.model.UserOffers;
 import com.example.SkillSwap.model.UserWants;
@@ -35,19 +34,17 @@ public class MatchingController {
     private final UserOffersRepository userOffersRepository;
     private final UserWantsRepository userWantsRepository;
     private final SkillRepository skillRepository;
-    private final SkillTagUtil skillTagUtil;
+
 
     //Constructor for all dependencies
     public MatchingController(MatchingService matchingService,
                              UserOffersRepository userOffersRepository,
                              UserWantsRepository userWantsRepository,
-                             SkillRepository skillRepository,
-                             SkillTagUtil skillTagUtil) {
+                             SkillRepository skillRepository) {
         this.matchingService = matchingService;
         this.userOffersRepository = userOffersRepository;
         this.userWantsRepository = userWantsRepository;
         this.skillRepository = skillRepository;
-        this.skillTagUtil = skillTagUtil;
     }
     
     @GetMapping("/{userId}")
@@ -69,37 +66,47 @@ public class MatchingController {
             matchResults = filterMatchesByTags(matchResults, activeFilterTags);
         }
         
-        List<Users> matches = matchResults.stream().map(MatchingService.MatchResult::getUser).collect(java.util.stream.Collectors.toList());
+        // Convert match results to user list
+        List<Users> matches = new ArrayList<>();
+        for (MatchingService.MatchResult result : matchResults) {
+            matches.add(result.getUser());
+        }
         
-        // ✅ OPTIMIZED: Bulk load all skills instead of N+1 queries
         if (!matches.isEmpty()) {
             // Extract all user IDs from matches
-            List<Long> matchedUserIds = matches.stream()
-                .map(Users::getId)
-                .toList();
+            List<Long> matchedUserIds = new ArrayList<>();
+            for (Users user : matches) {
+                matchedUserIds.add(user.getId());
+            }
             
-            // Bulk query: Load all offers and wants in 2 queries instead of N queries
+            // Load all offers and wants
             List<UserOffers> allOffers = userOffersRepository.findByUserIdIn(matchedUserIds);
             List<UserWants> allWants = userWantsRepository.findByUserIdIn(matchedUserIds);
             
             // Map skills back to users
             for (Users user : matches) {
-                // Find this user's offer and want from the bulk-loaded lists
-                UserOffers userOffer = allOffers.stream()
-                    .filter(offer -> offer.getUser().getId().equals(user.getId()))
-                    .findFirst()
-                    .orElse(null);
+                // Find this user's offer and want from the lists
+                UserOffers userOffer = null;
+                for (UserOffers offer : allOffers) {
+                    if (offer.getUser().getId().equals(user.getId())) {
+                        userOffer = offer;
+                        break;
+                    }
+                }
                     
-                UserWants userWant = allWants.stream()
-                    .filter(want -> want.getUser().getId().equals(user.getId()))
-                    .findFirst()
-                    .orElse(null);
+                UserWants userWant = null;
+                for (UserWants want : allWants) {
+                    if (want.getUser().getId().equals(user.getId())) {
+                        userWant = want;
+                        break;
+                    }
+                }
                 
                 user.setUserOffer(userOffer);
                 user.setUserWant(userWant);
                 
                 // Populate tags for this user's skills
-                skillTagUtil.populateSkillTags(user);
+                populateSkillTags(user);
             }
         }
         
@@ -172,10 +179,16 @@ public class MatchingController {
             return new ArrayList<>();
         }
         
-        return Arrays.stream(filterTagsParam.split(","))
-                .map(String::trim)
-                .filter(tag -> !tag.isEmpty())
-                .collect(java.util.stream.Collectors.toList());
+        // Parse tags
+        List<String> tags = new ArrayList<>();
+        String[] parts = filterTagsParam.split(",");
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                tags.add(trimmed);
+            }
+        }
+        return tags;
     }
     
     /**
@@ -186,33 +199,74 @@ public class MatchingController {
             List<MatchingService.MatchResult> matchResults, 
             List<String> activeFilterTags) {
         
-        return matchResults.stream()
-                .filter(matchResult -> {
-                    Users matchedUser = matchResult.getUser();
-                    
-                    // Check if user's offer skill has any of the active filter tags
-                    boolean offerHasFilterTags = false;
-                    if (matchedUser.getUserOffer() != null && matchedUser.getUserOffer().getSkillId() != null) {
-                        Optional<Skill> offerSkill = skillRepository.findById(matchedUser.getUserOffer().getSkillId());
-                        if (offerSkill.isPresent() && offerSkill.get().getTags() != null) {
-                            offerHasFilterTags = offerSkill.get().getTags().stream()
-                                    .anyMatch(activeFilterTags::contains);
+        // Filter matches
+        List<MatchingService.MatchResult> filteredResults = new ArrayList<>();
+        
+        for (MatchingService.MatchResult matchResult : matchResults) {
+            Users matchedUser = matchResult.getUser();
+            
+            // Check if user's offer skill has any of the active filter tags
+            boolean offerHasFilterTags = false;
+            if (matchedUser.getUserOffer() != null && matchedUser.getUserOffer().getSkillId() != null) {
+                Optional<Skill> offerSkill = skillRepository.findById(matchedUser.getUserOffer().getSkillId());
+                if (offerSkill.isPresent() && offerSkill.get().getTags() != null) {
+                    // Check if any offer tag matches filter tags
+                    for (String offerTag : offerSkill.get().getTags()) {
+                        if (activeFilterTags.contains(offerTag)) {
+                            offerHasFilterTags = true;
+                            break;
                         }
                     }
-                    
-                    // Check if user's want skill has any of the active filter tags
-                    boolean wantHasFilterTags = false;
-                    if (matchedUser.getUserWant() != null && matchedUser.getUserWant().getSkillId() != null) {
-                        Optional<Skill> wantSkill = skillRepository.findById(matchedUser.getUserWant().getSkillId());
-                        if (wantSkill.isPresent() && wantSkill.get().getTags() != null) {
-                            wantHasFilterTags = wantSkill.get().getTags().stream()
-                                    .anyMatch(activeFilterTags::contains);
+                }
+            }
+            
+            // Check if user's want skill has any of the active filter tags
+            boolean wantHasFilterTags = false;
+            if (matchedUser.getUserWant() != null && matchedUser.getUserWant().getSkillId() != null) {
+                Optional<Skill> wantSkill = skillRepository.findById(matchedUser.getUserWant().getSkillId());
+                if (wantSkill.isPresent() && wantSkill.get().getTags() != null) {
+                    // Check if any want tag matches filter tags
+                    for (String wantTag : wantSkill.get().getTags()) {
+                        if (activeFilterTags.contains(wantTag)) {
+                            wantHasFilterTags = true;
+                            break;
                         }
                     }
-                    
-                    // Keep match if either offer or want has the filter tags
-                    return offerHasFilterTags || wantHasFilterTags;
-                })
-                .collect(java.util.stream.Collectors.toList());
+                }
+            }
+            
+            // Keep match if either offer or want has filter tags
+            if (offerHasFilterTags || wantHasFilterTags) {
+                filteredResults.add(matchResult);
+            }
+        }
+        
+        return filteredResults;
+    }
+    
+    /**
+     * Helper method to populate tags for UserOffers and UserWants
+     * @param user the user whose skill tags should be populated
+     */
+    private void populateSkillTags(Users user) {
+        if (user == null) {
+            return;
+        }
+        
+        // Populate tags for UserOffer
+        if (user.getUserOffer() != null && user.getUserOffer().getSkillId() != null) {
+            Optional<Skill> skillOpt = skillRepository.findById(user.getUserOffer().getSkillId());
+            if (skillOpt.isPresent()) {
+                user.getUserOffer().setTags(skillOpt.get().getTags());
+            }
+        }
+        
+        // Populate tags for UserWant
+        if (user.getUserWant() != null && user.getUserWant().getSkillId() != null) {
+            Optional<Skill> skillOpt = skillRepository.findById(user.getUserWant().getSkillId());
+            if (skillOpt.isPresent()) {
+                user.getUserWant().setTags(skillOpt.get().getTags());
+            }
+        }
     }
 } 

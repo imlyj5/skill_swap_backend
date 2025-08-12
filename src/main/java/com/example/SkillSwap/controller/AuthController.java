@@ -9,7 +9,6 @@ import com.example.SkillSwap.repository.UserRepository;
 import com.example.SkillSwap.model.Users;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Optional;
 
 @RestController
 public class AuthController {
@@ -36,12 +35,12 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
         }
         
-        // Check password (in a real app, you'd hash the password)
+        // Check password
         if (!password.equals(user.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
         }
         
-        // Return user data (without password)
+        // Return user data
         Map<String, Object> response = new HashMap<>();
         response.put("id", user.getId());
         response.put("username", user.getUsername());
@@ -69,7 +68,7 @@ public class AuthController {
         // Save the new user
         Users savedUser = userRepository.save(newUser);
         
-        // Return user data (without password)
+        // Return user data
         Map<String, Object> response = new HashMap<>();
         response.put("id", savedUser.getId());
         response.put("username", savedUser.getUsername());

@@ -1,3 +1,1 @@
--- This migration repairs the Flyway schema history
--- It marks the previous V2 migration as deleted
--- This allows V3 to run properly 
+-- Mark the previous V2 migration as deleted

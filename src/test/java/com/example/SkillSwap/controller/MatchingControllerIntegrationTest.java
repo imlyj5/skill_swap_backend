@@ -9,7 +9,7 @@ import com.example.SkillSwap.repository.UserWantsRepository;
 import com.example.SkillSwap.repository.SkillRepository;
 import com.example.SkillSwap.repository.UserRepository;
 import com.example.SkillSwap.service.MatchingService;
-import com.example.SkillSwap.util.SkillTagUtil;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,8 +50,7 @@ class MatchingControllerIntegrationTest {
     @Autowired
     private MatchingService matchingService;
 
-    @Autowired
-    private SkillTagUtil skillTagUtil;
+
 
     private MockMvc mockMvc;
 

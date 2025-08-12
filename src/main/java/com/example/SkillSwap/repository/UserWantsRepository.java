@@ -16,9 +16,11 @@ public interface UserWantsRepository extends JpaRepository<UserWants, Long> {
     List<UserWants> findBySkillName(String skillName);
     
     /**
-     * Find all UserWants for a list of user IDs (bulk query)
+     * Find all UserWants for a list of user IDs
      * @param userIds list of user IDs to search for
      * @return List of UserWants for the specified users
      */
     List<UserWants> findByUserIdIn(List<Long> userIds);
+    
+
 }

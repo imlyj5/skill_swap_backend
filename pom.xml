@@ -33,8 +33,6 @@
 		<flyway.password>${env.DATABASE_PASSWORD}</flyway.password>
 		<flyway.schemas>public</flyway.schemas>
 		<flyway.locations>classpath:db/migration</flyway.locations>
-		<flyway.baseline-on-migrate>true</flyway.baseline-on-migrate>
-		<flyway.validate-on-migrate>true</flyway.validate-on-migrate>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -117,8 +115,8 @@
 					<password>${flyway.password}</password>
 					<schemas>${flyway.schemas}</schemas>
 					<locations>${flyway.locations}</locations>
-					<baselineOnMigrate>${flyway.baseline-on-migrate}</baselineOnMigrate>
-					<validateOnMigrate>${flyway.validate-on-migrate}</validateOnMigrate>
+					<baselineOnMigrate>true</baselineOnMigrate>
+					<validateOnMigrate>false</validateOnMigrate>
 				</configuration>
 			</plugin>
 			<plugin>

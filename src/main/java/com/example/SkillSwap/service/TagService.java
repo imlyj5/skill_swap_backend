@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * AI-powered skill tagging service using Google Gemini
- * Generates intelligent tags for skills with fallback to rule-based logic
+ * Generates intelligent tags for skills with fallback logic
  */
 @Service
 public class TagService {
@@ -39,7 +39,7 @@ public class TagService {
     }
     
     /**
-     * Generate AI tags for a skill using Gemini AI with rule-based fallback
+     * Generate AI tags for a skill using Gemini AI with fallback logic
      * @param skillName the skill name
      * @return List of relevant tags
      */
@@ -50,11 +50,11 @@ public class TagService {
                 return generateTagsWithGemini(skillName);
             } catch (Exception e) {
                 System.err.println("Gemini AI failed, using fallback: " + e.getMessage());
-                // Fall back to rule-based approach
+                // Fall back
                 return generateTagsWithRules(skillName);
             }
         } else {
-            // No API key, use rule-based approach
+            // No API key, fall back
             return generateTagsWithRules(skillName);
         }
     }
@@ -64,14 +64,21 @@ public class TagService {
      */
     private List<String> generateTagsWithGemini(String skillName) throws IOException {
         String prompt = String.format(
-            "Generate exactly 3-5 highly relevant and specific category tags for the skill '%s'. " +
-            "Include both broad categories AND specific subcategories. Use technical terms when appropriate. " +
-            "For music: include instrument families (strings, woodwinds, percussion), genres, techniques. " +
-            "For sports: include types (team, individual, water, winter), equipment, styles. " +
-            "For technology: include specific domains (web, mobile, AI, database). " +
-            "Examples for violin: music, strings, classical, performance, orchestra. " +
-            "Examples for programming: technology, software, coding, development, logic. " +
-            "Examples for cooking: culinary, food, nutrition, kitchen, recipes. " +
+            "Generate exactly 3 broad category tags for the skill '%s'. " +
+            "Use only high-level, general categories. Focus on the main domain or field. " +
+            "Examples: " +
+            "- photography → art " +
+            "- piano → music " +
+            "- sing → music " +
+            "- hand-craft → art " +
+            "- tennis → sport " +
+            "- cooking → lifestyle " +
+            "- programming → technology " +
+            "- yoga → wellness " +
+            "- painting → art " +
+            "- guitar → music " +
+            "- swimming → sport " +
+            "- writing → communication " +
             "Use lowercase, return only tags separated by commas, no explanations.",
             skillName
         );
@@ -161,99 +168,27 @@ public class TagService {
             }
         }
         
-        // Ensure we have at least 1 tag and at most 5
+        // Ensure we have at least 1 tag and at most 3
         if (tags.isEmpty()) {
             tags.add("general");
-        } else if (tags.size() > 5) {
-            tags = tags.subList(0, 5);
+        } else if (tags.size() > 3) {
+            tags = tags.subList(0, 3);
         }
         
         return tags;
     }
     
     /**
-     * Fallback rule-based tag generation (original logic)
+     * Fallback tag generation
+     * Returns the skill name as a single tag
      */
     private List<String> generateTagsWithRules(String skillName) {
         if (skillName == null || skillName.trim().isEmpty()) {
             return new ArrayList<>();
         }
         
-        String lowerSkill = skillName.toLowerCase();
-        Set<String> tags = new HashSet<>();
-        
-        // Music-related skills
-        if (lowerSkill.contains("guitar") || lowerSkill.contains("piano") || 
-            lowerSkill.contains("violin") || lowerSkill.contains("drums") ||
-            lowerSkill.contains("sing") || lowerSkill.contains("music")) {
-            tags.add("music");
-            tags.add("arts");
-        }
-        
-        // Technology skills
-        if (lowerSkill.contains("program") || lowerSkill.contains("code") ||
-            lowerSkill.contains("javascript") || lowerSkill.contains("python") ||
-            lowerSkill.contains("java") || lowerSkill.contains("web") ||
-            lowerSkill.contains("software") || lowerSkill.contains("app")) {
-            tags.add("technology");
-            tags.add("programming");
-        }
-        
-        // Sports and fitness
-        if (lowerSkill.contains("sport") || lowerSkill.contains("fitness") ||
-            lowerSkill.contains("yoga") || lowerSkill.contains("run") ||
-            lowerSkill.contains("swim") || lowerSkill.contains("tennis") ||
-            lowerSkill.contains("basketball") || lowerSkill.contains("soccer") ||
-            lowerSkill.contains("golf")) {
-            tags.add("sports");
-            tags.add("health");
-        }
-        
-        // Languages
-        if (lowerSkill.contains("english") || lowerSkill.contains("spanish") ||
-            lowerSkill.contains("french") || lowerSkill.contains("chinese") ||
-            lowerSkill.contains("language") || lowerSkill.contains("speak")) {
-            tags.add("languages");
-            tags.add("communication");
-        }
-        
-        // Cooking and food
-        if (lowerSkill.contains("cook") || lowerSkill.contains("bake") ||
-            lowerSkill.contains("chef") || lowerSkill.contains("food") ||
-            lowerSkill.contains("recipe")) {
-            tags.add("cooking");
-            tags.add("lifestyle");
-        }
-        
-        // Arts and crafts
-        if (lowerSkill.contains("draw") || lowerSkill.contains("paint") ||
-            lowerSkill.contains("craft") || lowerSkill.contains("design") ||
-            lowerSkill.contains("art")) {
-            tags.add("arts");
-            tags.add("creative");
-        }
-        
-        // Business and professional
-        if (lowerSkill.contains("business") || lowerSkill.contains("manage") ||
-            lowerSkill.contains("market") || lowerSkill.contains("sales") ||
-            lowerSkill.contains("leadership")) {
-            tags.add("business");
-            tags.add("professional");
-        }
-        
-        // Education and teaching
-        if (lowerSkill.contains("teach") || lowerSkill.contains("tutor") ||
-            lowerSkill.contains("education") || lowerSkill.contains("train")) {
-            tags.add("education");
-            tags.add("teaching");
-        }
-        
-        // Default tags if no specific match
-        if (tags.isEmpty()) {
-            tags.add("general");
-        }
-        
-        return new ArrayList<>(tags);
+        // Simple fallback: return the skill name as a single tag
+        return Arrays.asList(skillName.trim());
     }
     
     /**
