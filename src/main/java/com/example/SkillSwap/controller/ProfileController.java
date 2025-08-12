@@ -121,15 +121,33 @@ public class ProfileController {
         Users existingUser = repository.findById(id)
             .orElseThrow(() -> new UserNotFoundException(id));
         
-        // Update user profile fields with new data
-        existingUser.setUsername(newUser.getUsername());
-        existingUser.setPronouns(newUser.getPronouns());
-        existingUser.setLocation(newUser.getLocation());
-        existingUser.setBio(newUser.getBio());
-        existingUser.setEmail(newUser.getEmail());
-        existingUser.setLearning_style(newUser.getLearning_style());
-        existingUser.setAvailability(newUser.getAvailability());
-        existingUser.setPassword(newUser.getPassword());
+        // Update user profile fields with new data (only if provided)
+        if (newUser.getUsername() != null) {
+            existingUser.setUsername(newUser.getUsername());
+        }
+        if (newUser.getPronouns() != null) {
+            existingUser.setPronouns(newUser.getPronouns());
+        }
+        if (newUser.getLocation() != null) {
+            existingUser.setLocation(newUser.getLocation());
+        }
+        if (newUser.getBio() != null) {
+            existingUser.setBio(newUser.getBio());
+        }
+        if (newUser.getEmail() != null) {
+            existingUser.setEmail(newUser.getEmail());
+        }
+        if (newUser.getLearning_style() != null) {
+            existingUser.setLearning_style(newUser.getLearning_style());
+        }
+        if (newUser.getAvailability() != null) {
+            existingUser.setAvailability(newUser.getAvailability());
+        }
+        
+        // Only update password if it's provided (not null or empty)
+        if (newUser.getPassword() != null && !newUser.getPassword().trim().isEmpty()) {
+            existingUser.setPassword(newUser.getPassword());
+        }
         
         // Save the updated user profile
         Users savedUser = repository.save(existingUser);
